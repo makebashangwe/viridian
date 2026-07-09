@@ -148,7 +148,7 @@ def create_activity_session(
         raise HTTPException(status_code=404,detail="Activity Rule Not Found")
     
     if incoming_session.duration_minutes > matching_activity["max_session_minutes"]: #Prevent 48 hour sessions lol
-        raise HTTPException(status_code = "400", detail="Session exceeds max allowed minutes")
+        raise HTTPException(status_code = 400, detail="Session exceeds max allowed minutes")
 
     #Point logic
     points_earned = 0
@@ -275,7 +275,7 @@ def get_xp_by_activity_id(
     current_user = Depends(get_current_user)):
     xp_by_activity_id = 0
     for session in activity_sessions:
-        if (sessions["user_id"] == current_user["id"]):
+        if (session["user_id"] == current_user["id"]):
             if session["activity_id"] == activity_id:
                 xp_by_activity_id+=session["points_earned"]
     return {
@@ -385,7 +385,7 @@ def get_rewards_summary(current_user = Depends(get_current_user)):
         if goal["user_id"] == current_user["id"]:
             if goal["is_completed"]:
                 completed_goal_count+=1
-                rewards_points_earned += goal["rewards_points"]
+                reward_points_earned += goal["rewards_points"]
                 completed_goals.append(goal)
     return {
         "user_id" : current_user["id"],
@@ -397,8 +397,9 @@ def get_rewards_summary(current_user = Depends(get_current_user)):
             
 #Goal Progress by ID
 
-@app.get("goals/{goals_id}/progress")
-def get_goal_progress_by_id(goal_id: int,
+@app.get("goals/{goal_id}/progress")
+def get_goal_progress_by_id(
+    goal_id: int,
     current_user = Depends(get_current_user)):
     for goal in goals:
         if goal["user_id"] == current_user["id"] and goal["id"] == goal_id:
@@ -437,7 +438,7 @@ def create_reward(
     return new_reward
 
 #See All Rewards
-@app.get("/rewards/")
+@app.get("/rewards")
 def get_all_rewards(current_user = Depends(get_current_user)):
     user_rewards = []
     for reward in rewards:
@@ -454,9 +455,9 @@ def get_reward_balance(current_user=Depends(get_current_user)):
     for goal in goals:
         if goal["user_id"] == current_user["id"] and goal["is_completed"]:
             reward_points_earned += goal["reward_points"]
-    for redeption in reward_redemptions:
-        if redeption["user_id"] == current_user["id"]:
-            reward_points_spent += redeption["point_cost"]
+    for redemption in reward_redemptions:
+        if redemption["user_id"] == current_user["id"]:
+            reward_points_spent += redemption["point_cost"]
     available_balance = reward_points_earned-reward_points_spent
     return{
         "user_id" : current_user["id"],
@@ -464,7 +465,7 @@ def get_reward_balance(current_user=Depends(get_current_user)):
         "reward_points_spent": reward_points_spent,
         "available_balance" : available_balance
     }
-    
+
 #Redeem by Reward ID
 @app.post("/rewards/{reward_id}/redeem")
 def redeem_reward(
@@ -479,9 +480,9 @@ def redeem_reward(
                 for goal in goals:
                     if goal["user_id"] == current_user["id"] and goal["is_completed"]:
                         reward_points_earned += goal["reward_points"]
-                for redeption in reward_redemptions:
-                    if redeption["user_id"] == current_user["id"]:
-                        reward_points_spent += redeption["point_cost"]
+                for redemption in reward_redemptions:
+                    if redemption["user_id"] == current_user["id"]:
+                        reward_points_spent += redemption["point_cost"]
                 available_balance = reward_points_earned-reward_points_spent
                 if available_balance < reward["point_cost"]:
                     raise HTTPException(status_code = 400, detail="Not Enough Points")
@@ -495,6 +496,7 @@ def redeem_reward(
                     }
                     reward_redemptions.append(new_redemption)
                     return new_redemption
+    raise HTTPException(status_code=404,detail="Reward Not Found.")
 
 
 #Get by Reward ID
