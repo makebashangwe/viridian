@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends
-from data import users, activity_rules, activity_sessions, goals #Fake DBs
-from models import UserRegister, UserLogin, ActivityRuleCreate, ActivityRuleChange, ActivitySessionCreate
+from data import users, activity_rules, activity_sessions, goals, rewards #Fake DBs
+from models import UserRegister, UserLogin, ActivityRuleCreate, ActivityRuleChange, ActivitySessionCreate, GoalCreate
 from auth import hash_password, verify_password, create_access_token, get_current_user
 
 app = FastAPI()
@@ -283,4 +283,156 @@ def get_xp_by_activity_id(
         "activity_id": activity_id,
         "total_points": xp_by_activity_id
     }
-        
+
+#Create goal
+@app.post("/goals")
+def create_goal(
+    incoming_goal_data: GoalCreate,
+    current_user = Depends(get_current_user)):
+    
+    new_goal = {
+        "id" : len(goals)+1,
+        "user_id" : current_user["id"],
+        "progress_value": 0,
+        "is_completed" : False,
+
+        **incoming_goal_data.model_dump()
+    }
+    goals.append(new_goal)
+
+    return new_goal
+    
+#See all goals
+@app.get("/goals")
+def get_goals(current_user = Depends(get_current_user)):#require the current logged-in user
+    user_goals = []
+    
+    for goal in goals:
+        if (goal["user_id"] == current_user["id"]):
+            user_goals.append(goal)
+
+    return user_goals
+
+
+#Delete Goal
+@app.delete("/goals/{goal_id}")
+def delete_goal(
+    goal_id : int,
+    current_user = Depends(get_current_user)):
+    for goal in goals:
+        if goal["user_id"] == current_user["id"] and goal["id"] == goal_id:
+            goals.remove(goal)
+            return {
+                "message": "Success."
+            }
+    raise HTTPException(status_code=404,detail="Goal Not Found.")
+
+
+
+#See All progress
+@app.get("/goals/progress")
+def get_goals_progress(current_user = Depends(get_current_user)):
+    total_xp = 0
+    total_sessions = 0
+    legal_goals_completed = 0
+    main_goals_completed = 0
+    bonus_intervals = 0
+
+    for session in activity_sessions:
+        if (session["user_id"] == current_user["id"]):
+            total_xp += session["points_earned"]
+            total_sessions +=1
+
+            if session["legal_goal_completed"]:
+                legal_goals_completed+=1
+
+            if session["main_goal_completed"]:
+                main_goals_completed +=1
+
+            bonus_intervals += session["bonus_intervals"]
+    stats = {
+        "total_xp" : total_xp,
+        "total_sessions" : total_sessions,
+        "legal_goals_completed": legal_goals_completed,
+        "main_goals_completed": main_goals_completed,
+        "bonus_intervals" : bonus_intervals
+    }
+
+    updated_goals = []
+    for goal in goals:
+        if goal["user_id"] == current_user["id"]:
+            target_type = goal["target_type"]
+            if target_type in stats:
+                goal["progress_value"] = stats[target_type]
+            if goal["progress_value"] >= goal["target_value"]:
+                goal["is_completed"] = True
+            else:
+                goal["is_completed"] = False
+            updated_goals.append(goal)
+
+    return updated_goals
+
+
+
+#Goal Rewards
+@app.get("/goals/rewards-summary")
+def get_rewards_summary(current_user = Depends(get_current_user)):
+    completed_goal_count = 0
+    reward_points_earned = 0
+    completed_goals = []
+
+    for goal in goals:
+        if goal["user_id"] == current_user["id"]:
+            if goal["is_completed"]:
+                completed_goal_count+=1
+                rewards_points_earned += goal["rewards_points"]
+                completed_goals.append(goal)
+    return {
+        "user_id" : current_user["id"],
+        "completed_goals" : completed_goals,
+        "reward_points_earned": reward_points_earned,
+        "completed_goal_count": completed_goal_count
+    }
+
+            
+#Goal Progress by ID
+
+@app.get("goals/{goals_id}/progress")
+def get_goal_progress_by_id(goal_id: int,
+    current_user = Depends(get_current_user)):
+    for goal in goals:
+        if goal["user_id"] == current_user["id"] and goal["id"] == goal_id:
+            return {
+                "goal_id": goal["id"],
+                "title": goal["title"],
+                "progress_value" : goal["progress_value"],
+                "target_value": goal["target_value"],
+                "is_completed": goal["is_completed"]
+            }
+
+    raise HTTPException(status_code=404,detail="Goal Not Found.")
+
+#Find Goal by ID
+@app.get("/goals/{goal_id}")
+def get_goals_by_id(
+    goal_id: int,
+    current_user = Depends(get_current_user)):
+    for goal in goals:
+        if goal["user_id"] == current_user["id"] and goal["id"] == goal_id:
+            return goal
+    raise HTTPException(status_code=404,detail="Goal Not Found.")
+
+#PHASE 5: REWARDS STORE
+#@app.post("/rewards")
+#def create_reward
+
+#get reward by id
+
+# delete reward
+
+# rewards balance
+
+#redeem reward
+
+
+#PHASE 5.5 TESTING EVERYTHING I COULDNT TEST LOL

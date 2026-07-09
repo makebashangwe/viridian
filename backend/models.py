@@ -38,3 +38,20 @@ class ActivitySessionCreate(BaseModel):
     duration_minutes: int
     location: str
     notes: str | None = None
+
+class GoalCreate(BaseModel):
+    title: str 
+    description: str
+    target_type: str  #ex. "points_earned"
+    target_value: float #ex. 30
+    reward_points: float #ex. 5
+
+class RewardCreate(BaseModel):
+    name: str
+    description: str
+    tag: str
+    point_count: float
+    estimated_cost: float
+    image_url: str | None = None
+    is_locked: bool = Flase
+    required_goal_id: int | None = None
