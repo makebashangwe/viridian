@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from models import UserRegister
-from data import users, activity_rules
+from data import users, activity_rules, activity_sessions
 from fastapi import HTTPException
-from models import UserRegister, UserLogin, ActivityRuleCreate, ActivityRuleChange
+from models import UserRegister, UserLogin, ActivityRuleCreate, ActivityRuleChange, ActivitySessionCreate
 from auth import hash_password, verify_password, create_access_token
 from fastapi import Depends
 from auth import get_current_user
@@ -123,7 +123,7 @@ def edit_activity_by_id(
             return activity
     raise HTTPException(status_code=404,detail="Activity not found.")
 
-                
+ #delete activity               
 @app.delete("/activities/{activity_id}")
 def delete_activity(
     activity_id :int, 
@@ -136,3 +136,50 @@ def delete_activity(
             }
     raise HTTPException(status_code=404,detail="Activity not found.")
 
+#create session
+@app.post("/sessions")
+def create_activity_session(
+    incoming_session: ActivitySessionCreate,#take in activity session data
+    current_user = Depends(get_current_user)):#require the current logged-in user
+
+    matching_activity = None
+    
+    for activity in activity_rules:
+        if (activity["user_id"] == current_user["id"]) and (activity["id"] == incoming_session.activity_id):
+            matching_activity = activity
+            break
+    if matching_activity is None:
+        raise HTTPException(status_code=404,detail="Activity Rule Not Found")
+    points_earned = 0
+    legal_goal_completed = False
+    main_goal_completed = False
+    bonus_intervals = 0
+
+    if incoming_session.duration_minutes >= matching_activity["legal_minutes"]:
+        legal_goal_completed = True
+        points_earned += matching_activity["legal_points"]
+
+    if incoming_session.duration_minutes >= matching_activity["goal_minutes"]:
+        main_goal_completed = True
+        points_earned += matching_activity["goal_points"]
+    
+    if incoming_session.duration_minutes > matching_activity["goal_minutes"]:
+        extra_minutes = incoming_session.duration_minutes - matching_activity["goal_minutes"]
+        bonus_intervals = extra_minutes // matching_activity["bonus_interval_minutes"]
+        points_earned += bonus_intervals * matching_activity["bonus_points"]
+    new_session = {
+        "id" : len(activity_sessions) +1,
+        "user_id" : current_user["id"],
+        "activity_id" : matching_activity["id"],
+        "activity_name" : matching_activity["name"],
+        "duration_minutes" : incoming_session.duration_minutes,
+        "location" : incoming_session.location,
+        "points_earned" : points_earned,
+        "legal_goal_completed": legal_goal_completed,
+        "main_goal_completed": main_goal_completed,
+        "bonus_intervals": bonus_intervals,
+        "notes": incoming_session.notes
+    }
+    
+    activity_sessions.append(new_session)
+    return new_session

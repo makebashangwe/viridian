@@ -32,3 +32,9 @@ class ActivityRuleChange(BaseModel):
     bonus_points : Optional[float] = None
     max_session_minutes: Optional[int] = None
     default_location: Optional[str] = None
+
+class ActivitySessionCreate(BaseModel):
+    activity_id: int
+    duration_minutes: int
+    location: str
+    notes: str | None = None
