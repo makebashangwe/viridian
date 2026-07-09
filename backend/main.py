@@ -1,14 +1,17 @@
+#IMPORTS
 from fastapi import FastAPI, HTTPException, Depends
 from data import users, activity_rules, activity_sessions, goals, rewards, reward_redemptions #Fake DBs
 from models import UserRegister, UserLogin, ActivityRuleCreate, ActivityRuleChange, ActivitySessionCreate, GoalCreate, RewardCreate
 from auth import hash_password, verify_password, create_access_token, get_current_user
 
+#CREATING APPLICATION
 app = FastAPI()
 
 @app.get("/")
 def read_root():
     return {"message" : "Viridian API is running"}
 
+#USER & AUTHENTICATION LOGIC
 #Register User and generate Hash
 @app.post("/auth/register")
 def register_user(incoming_user: UserRegister):
@@ -55,7 +58,7 @@ def login_user(login_data: UserLogin):
     
     raise HTTPException(status_code=401, detail="Invalid email or password")
 
-#Get information about the current user 
+#Get Current User Information 
 @app.get("/users/me")
 def read_users_me(current_user = Depends(get_current_user)):
     return {
@@ -64,7 +67,7 @@ def read_users_me(current_user = Depends(get_current_user)):
         "username": current_user["username"]
     }
 
-#!!!Needs Testing!!!
+#ACTIVITY RULE LOGIC
 
 #Creating Activity Rules
 @app.post("/activities")
@@ -120,6 +123,7 @@ def edit_activity_by_id(
     raise HTTPException(status_code=404,detail="Activity not found.")
 
  #delete activity               
+
 @app.delete("/activities/{activity_id}")
 def delete_activity(
     activity_id :int, 
@@ -131,6 +135,8 @@ def delete_activity(
                 "message" : "Success."
             }
     raise HTTPException(status_code=404,detail="Activity not found.")
+
+#SESSION LOGIC
 
 #create session
 @app.post("/sessions")
@@ -219,6 +225,7 @@ def delete_session(
             }
     raise HTTPException(status_code=404,detail="Session not found.")
 
+#XP / POINTS LOGIC
 #XP / Point Summary
 @app.get("/xp/summary")
 def get_xp_summary(
@@ -284,6 +291,8 @@ def get_xp_by_activity_id(
         "total_points": xp_by_activity_id
     }
 
+#GOAL LOGIC
+
 #Create goal
 @app.post("/goals")
 def create_goal(
@@ -327,7 +336,7 @@ def delete_goal(
             }
     raise HTTPException(status_code=404,detail="Goal Not Found.")
 
-
+#GOAL PROGRESS LOGIC
 
 #See All progress
 @app.get("/goals/progress")
@@ -373,7 +382,6 @@ def get_goals_progress(current_user = Depends(get_current_user)):
     return updated_goals
 
 
-
 #Goal Rewards
 @app.get("/goals/rewards-summary")
 def get_rewards_summary(current_user = Depends(get_current_user)):
@@ -396,7 +404,6 @@ def get_rewards_summary(current_user = Depends(get_current_user)):
 
             
 #Goal Progress by ID
-
 @app.get("goals/{goal_id}/progress")
 def get_goal_progress_by_id(
     goal_id: int,
@@ -423,7 +430,9 @@ def get_goals_by_id(
             return goal
     raise HTTPException(status_code=404,detail="Goal Not Found.")
 
-#PHASE 5: REWARDS STORE
+
+#REWARDS STORE LOGIC
+
 #Create Reward
 @app.post("/rewards")
 def create_reward(
@@ -498,7 +507,6 @@ def redeem_reward(
                     return new_redemption
     raise HTTPException(status_code=404,detail="Reward Not Found.")
 
-
 #Get by Reward ID
 @app.get("/rewards/{reward_id}")
 def get_reward_by_id(
@@ -509,10 +517,6 @@ def get_reward_by_id(
             if reward["id"] == reward_id:
                 return reward
     raise HTTPException(status_code=404,detail="Reward Not Found.")
-
-
-
-
 
 #Delete Reward
 @app.delete("/rewards/{reward_id}")
@@ -526,7 +530,3 @@ def delete_reward(
                 "message": "Success."
             }
     raise HTTPException(status_code=404,detail="Reward Not Found.")
-
-
-
-#PHASE 5.5 TESTING EVERYTHING I COULDNT TEST LOL
