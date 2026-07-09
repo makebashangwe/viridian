@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from models import UserRegister
 from data import users, activity_rules
 from fastapi import HTTPException
-from models import UserRegister, UserLogin, ActivityRuleCreate
+from models import UserRegister, UserLogin, ActivityRuleCreate, ActivityRuleChange
 from auth import hash_password, verify_password, create_access_token
 from fastapi import Depends
 from auth import get_current_user
@@ -68,6 +68,8 @@ def read_users_me(current_user = Depends(get_current_user)):
         "username": current_user["username"]
     }
 
+#!!!Needs Testing!!!
+
 #Creating Activity Rules
 @app.post("/activities")
 def create_activity_rule(
@@ -97,4 +99,40 @@ def get_activity_rules(current_user = Depends(get_current_user)):
         if activity["user_id"] == current_user["id"]:
             user_activity_rules.append(activity)
     return user_activity_rules
+
+#Return by Activity ID
+@app.get("/activities/{activity_id}")
+def get_activity_by_id(
+    activity_id :int, 
+    current_user = Depends(get_current_user)):
+    for activity in activity_rules:
+        if (activity["user_id"] == current_user["id"]) and (activity["id"] == activity_id):
+            return activity
+    raise HTTPException(status_code="404",detail="Activity not found.")
+
+#Edit Activity By ID
+@app.patch("/activities/{activity_id}")
+def edit_activity_by_id(
+    activity_id :int,
+    updated_activity_rule : ActivityRuleChange,
+    current_user = Depends(get_current_user)):
+    for activity in activity_rules:
+        if (activity["user_id"] == current_user["id"]) and (activity["id"] == activity_id):
+            updated_data = updated_activity_rule.model_dump(exclude_unset=True) #takes out the NONE values
+            activity.update(updated_data)
+            return activity
+    raise HTTPException(status_code="404",detail="Activity not found.")
+
+                
+@app.delete("activities/{activity_id}")
+def delete_activity(
+    activity_id :int, 
+    current_user = Depends(get_current_user)):
+    for activity in activity_rules:
+        if (activity["user_id"] == current_user["id"]) and (activity["id"] == activity_id):
+            activity_rules.remove(activity)
+            return {
+                "message" : "Success."
+            }
+    raise HTTPException(status_code="404",detail="Activity not found.")
 

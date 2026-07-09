@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 
 class UserRegister(BaseModel):
     email: str
@@ -19,3 +20,15 @@ class ActivityRuleCreate(BaseModel):
     bonus_points : float
     max_session_minutes: int
     default_location: str
+
+class ActivityRuleChange(BaseModel):
+    name: Optional[str] = None
+    difficulty_rank:Optional[int] = None
+    legal_minutes:Optional[int] = None
+    legal_points:Optional[float] = None
+    goal_minutes:Optional[int] = None
+    goal_points:Optional[float] = None
+    bonus_interval_minutes :Optional[int] = None
+    bonus_points : Optional[float] = None
+    max_session_minutes: Optional[int] = None
+    default_location: Optional[str] = None
