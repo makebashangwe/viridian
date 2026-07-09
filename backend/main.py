@@ -150,6 +150,11 @@ def create_activity_session(
             break
     if matching_activity is None:
         raise HTTPException(status_code=404,detail="Activity Rule Not Found")
+    
+    if incoming_session.duration_minutes > matching_activity["max_session_minutes"]: #Prevent 48 hour sessions lol
+        raise HTTPException(status_code = "400", detail="Session exceeds max allowed minutes")
+
+    #Point logic
     points_earned = 0
     legal_goal_completed = False
     main_goal_completed = False
@@ -183,3 +188,103 @@ def create_activity_session(
     
     activity_sessions.append(new_session)
     return new_session
+
+#See All Sessions
+@app.get("/sessions")
+def get_sessions(current_user = Depends(get_current_user)):#require the current logged-in user
+    user_sessions = []
+    
+    for session in activity_sessions:
+        if (session["user_id"] == current_user["id"]):
+            user_sessions.append(session)
+
+    return user_sessions
+    
+#Return by Session ID
+@app.get("/sessions/{session_id}")
+def get_session_by_id(
+    session_id :int, 
+    current_user = Depends(get_current_user)):
+    for session in activity_sessions:
+        if (session["user_id"] == current_user["id"]) and (session["id"] == session_id):
+            return session
+    raise HTTPException(status_code=404,detail="Session not found.")
+
+#delete session               
+@app.delete("/sessions/{session_id}")
+def delete_session(
+    session_id :int, 
+    current_user = Depends(get_current_user)):
+    for session in activity_sessions:
+        if (session["user_id"] == current_user["id"]) and (session["id"] == session_id):
+            activity_sessions.remove(session)
+            return {
+                "message" : "Success."
+            }
+    raise HTTPException(status_code=404,detail="Session not found.")
+
+#XP / Point Summary
+@app.get("/xp/summary")
+def get_xp_summary(
+    current_user = Depends(get_current_user)):
+
+    total_points = 0
+    total_sessions = 0
+
+    bonus_intervals_total = 0
+    main_goal_completed_total = 0
+    legal_goal_completed_total = 0
+
+    for session in activity_sessions:
+        if (session["user_id"] == current_user["id"]):
+            total_points += session["points_earned"]
+            total_sessions +=1
+            if session["legal_goal_completed"]:
+                legal_goal_completed_total+=1
+            if session["main_goal_completed"]:
+                main_goal_completed_total +=1
+            if session ["bonus_intervals"]:
+                bonus_intervals_total += session["bonus_intervals"]
+
+    return {
+        "user_id" : current_user["id"],
+        "total_points" : total_points,
+        "total_sessions" : total_sessions,
+        "legal_goal_completed_total": legal_goal_completed_total,
+        "main_goal_completed_total": main_goal_completed_total,
+        "bonus_intervals_total" : bonus_intervals_total
+    }
+
+#XP / Points by Activity Type
+@app.get("/xp/by-activity")
+def get_xp_by_activity(
+    current_user = Depends(get_current_user)):
+    xp_by_activity = {}
+    for session in activity_sessions:
+        if (session["user_id"] == current_user["id"]):
+            if session["activity_name"] in xp_by_activity:
+                xp_by_activity[session["activity_name"]] += session["points_earned"]
+            else:
+                xp_by_activity[session["activity_name"]] = session["points_earned"]
+    return {
+        "user_id": current_user["id"],
+        "xp_by_activity": xp_by_activity
+    }
+
+        
+#XP / Points by Activity ID
+@app.get("/xp/by-activity/{activity_id}")
+def get_xp_by_activity_id(
+    activity_id:int,
+    current_user = Depends(get_current_user)):
+    xp_by_activity_id = 0
+    for session in activity_sessions:
+        if (sessions["user_id"] == current_user["id"]):
+            if session["activity_id"] == activity_id:
+                xp_by_activity_id+=session["points_earned"]
+    return {
+        "user_id": current_user["id"],
+        "activity_id": activity_id,
+        "total_points": xp_by_activity_id
+    }
+        
