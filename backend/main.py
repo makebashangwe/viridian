@@ -108,7 +108,7 @@ def get_activity_by_id(
     for activity in activity_rules:
         if (activity["user_id"] == current_user["id"]) and (activity["id"] == activity_id):
             return activity
-    raise HTTPException(status_code="404",detail="Activity not found.")
+    raise HTTPException(status_code=404,detail="Activity not found.")
 
 #Edit Activity By ID
 @app.patch("/activities/{activity_id}")
@@ -121,10 +121,10 @@ def edit_activity_by_id(
             updated_data = updated_activity_rule.model_dump(exclude_unset=True) #takes out the NONE values
             activity.update(updated_data)
             return activity
-    raise HTTPException(status_code="404",detail="Activity not found.")
+    raise HTTPException(status_code=404,detail="Activity not found.")
 
                 
-@app.delete("activities/{activity_id}")
+@app.delete("/activities/{activity_id}")
 def delete_activity(
     activity_id :int, 
     current_user = Depends(get_current_user)):
@@ -134,5 +134,5 @@ def delete_activity(
             return {
                 "message" : "Success."
             }
-    raise HTTPException(status_code="404",detail="Activity not found.")
+    raise HTTPException(status_code=404,detail="Activity not found.")
 
