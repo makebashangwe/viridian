@@ -4,17 +4,18 @@ Viridian is a life progression app that turns fitness, career, school, finance, 
 
 The current MVP is focused on the backend foundation for user accounts, authentication, and future user-specific fitness tracking.
 
-## Current Status
-
-Phase completed:
-
-- FastAPI backend setup
-- User registration
+## Current MVP Features:
+- User registration and login
 - Password hashing
-- Login with password verification
-- JWT access token creation
-- Protected current-user route foundation
-- In-memory fake database for early development
+- JWT protected routes
+- User-owned activity rules
+- Fitness session logging
+- XP calculation
+- XP summaries
+- Goal creation and progress tracking
+- Reward point summaries
+- Reward creation and redemption
+- In-memory fake database for learning/testing
 
 ## Tech Stack
 
@@ -31,10 +32,12 @@ Phase completed:
 ```text
 viridian/
 ├── backend/
+│   ├── Notes/
 │   ├── main.py
 │   ├── models.py
 │   ├── auth.py
 │   ├── data.py
 │   └── requirements.txt
+
 └── frontend/
 
