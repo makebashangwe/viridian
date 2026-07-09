@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends
-from data import users, activity_rules, activity_sessions, goals, rewards #Fake DBs
-from models import UserRegister, UserLogin, ActivityRuleCreate, ActivityRuleChange, ActivitySessionCreate, GoalCreate
+from data import users, activity_rules, activity_sessions, goals, rewards, reward_redemptions #Fake DBs
+from models import UserRegister, UserLogin, ActivityRuleCreate, ActivityRuleChange, ActivitySessionCreate, GoalCreate, RewardCreate
 from auth import hash_password, verify_password, create_access_token, get_current_user
 
 app = FastAPI()
@@ -423,16 +423,108 @@ def get_goals_by_id(
     raise HTTPException(status_code=404,detail="Goal Not Found.")
 
 #PHASE 5: REWARDS STORE
-#@app.post("/rewards")
-#def create_reward
+#Create Reward
+@app.post("/rewards")
+def create_reward(
+    incoming_reward: RewardCreate,
+    current_user = Depends(get_current_user)):
+    new_reward = {
+        "id": len(rewards)+1,
+        "user_id": current_user["id"],
+        **incoming_reward.model_dump()
+    }
+    rewards.append(new_reward)
+    return new_reward
 
-#get reward by id
+#See All Rewards
+@app.get("/rewards/")
+def get_all_rewards(current_user = Depends(get_current_user)):
+    user_rewards = []
+    for reward in rewards:
+        if reward["user_id"] == current_user["id"]:
+            user_rewards.append(reward)
+    return user_rewards
 
-# delete reward
+#View Reward Balance
+@app.get("/rewards/balance")
+def get_reward_balance(current_user=Depends(get_current_user)):
+    reward_points_earned = 0
+    reward_points_spent = 0
 
-# rewards balance
+    for goal in goals:
+        if goal["user_id"] == current_user["id"] and goal["is_completed"]:
+            reward_points_earned += goal["reward_points"]
+    for redeption in reward_redemptions:
+        if redeption["user_id"] == current_user["id"]:
+            reward_points_spent += redeption["point_cost"]
+    available_balance = reward_points_earned-reward_points_spent
+    return{
+        "user_id" : current_user["id"],
+        "reward_points_earned" : reward_points_earned,
+        "reward_points_spent": reward_points_spent,
+        "available_balance" : available_balance
+    }
+    
+#Redeem by Reward ID
+@app.post("/rewards/{reward_id}/redeem")
+def redeem_reward(
+    reward_id : int,
+    current_user = Depends(get_current_user)):
+    for reward in rewards:
+        if reward["user_id"] == current_user["id"]:
+            if reward["id"] == reward_id:
+                reward_points_earned = 0
+                reward_points_spent = 0
 
-#redeem reward
+                for goal in goals:
+                    if goal["user_id"] == current_user["id"] and goal["is_completed"]:
+                        reward_points_earned += goal["reward_points"]
+                for redeption in reward_redemptions:
+                    if redeption["user_id"] == current_user["id"]:
+                        reward_points_spent += redeption["point_cost"]
+                available_balance = reward_points_earned-reward_points_spent
+                if available_balance < reward["point_cost"]:
+                    raise HTTPException(status_code = 400, detail="Not Enough Points")
+                else:
+                    new_redemption = {
+                        "id" : len(reward_redemptions)+1,
+                        "user_id" : current_user["id"],
+                        "reward_id" : reward["id"],
+                        "reward_name": reward["name"],
+                        "point_cost": reward["point_cost"]
+                    }
+                    reward_redemptions.append(new_redemption)
+                    return new_redemption
+
+
+#Get by Reward ID
+@app.get("/rewards/{reward_id}")
+def get_reward_by_id(
+    reward_id : int,
+    current_user = Depends(get_current_user)):
+    for reward in rewards:
+        if reward["user_id"] == current_user["id"]:
+            if reward["id"] == reward_id:
+                return reward
+    raise HTTPException(status_code=404,detail="Reward Not Found.")
+
+
+
+
+
+#Delete Reward
+@app.delete("/rewards/{reward_id}")
+def delete_reward(
+    reward_id : int,
+    current_user = Depends(get_current_user)):
+    for reward in rewards:
+        if reward["user_id"] == current_user["id"] and reward["id"] == reward_id:
+            rewards.remove(reward)
+            return {
+                "message": "Success."
+            }
+    raise HTTPException(status_code=404,detail="Reward Not Found.")
+
 
 
 #PHASE 5.5 TESTING EVERYTHING I COULDNT TEST LOL
