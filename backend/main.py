@@ -1,11 +1,7 @@
-from fastapi import FastAPI
-from models import UserRegister
-from data import users, activity_rules, activity_sessions
-from fastapi import HTTPException
+from fastapi import FastAPI, HTTPException, Depends
+from data import users, activity_rules, activity_sessions, goals #Fake DBs
 from models import UserRegister, UserLogin, ActivityRuleCreate, ActivityRuleChange, ActivitySessionCreate
-from auth import hash_password, verify_password, create_access_token
-from fastapi import Depends
-from auth import get_current_user
+from auth import hash_password, verify_password, create_access_token, get_current_user
 
 app = FastAPI()
 
