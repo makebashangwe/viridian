@@ -5,6 +5,9 @@ from fastapi import HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from data import users
+from sqlalchemy.orm import Session
+from database import get_db
+import db_models
 
 #hashing algorithm that knows how to hash and verify that hash, and whether the old one is deprecated.
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -34,7 +37,9 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email = payload.get("sub")
@@ -45,8 +50,15 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid authentication credentials")
 
-    for user in users:
-        if user["email"] == email:
-            return user
+    user = db.query(db_models.User).filter(
+        db_models.User.email == email
+    ).first()
 
-    raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+    if user is None:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+
+    return {
+        "id": user.id,
+        "email": user.email,
+        "username": user.username
+    }

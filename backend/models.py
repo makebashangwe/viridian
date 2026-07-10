@@ -9,7 +9,7 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     email: str
     password: str
-    
+
 class ActivityRuleCreate(BaseModel):
     name: str
     difficulty_rank:int
@@ -51,7 +51,7 @@ class RewardCreate(BaseModel):
     name: str
     description: str
     tag: str
-    point_count: float
+    point_cost: float
     estimated_cost: float
     image_url: str | None = None
     is_locked: bool = False

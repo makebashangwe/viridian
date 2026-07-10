@@ -1,11 +1,13 @@
 #IMPORTS
+from database import engine, get_db
+import db_models
+from sqlalchemy.orm import Session
 from fastapi import FastAPI, HTTPException, Depends
 from data import users, activity_rules, activity_sessions, goals, rewards, reward_redemptions #Fake DBs
 from models import UserRegister, UserLogin, ActivityRuleCreate, ActivityRuleChange, ActivitySessionCreate, GoalCreate, RewardCreate
 from auth import hash_password, verify_password, create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
-from database import engine, get_db
-import db_models
+
 
 #CREATING APPLICATION
 app = FastAPI()
@@ -31,9 +33,9 @@ def register_user(
         raise HTTPException(status_code=400, detail="Email already exists")
    
    #Checking if username exists -> bool
-    existing_username = db.query(db_models.User).filter(
-        db_models.User.email == incoming_user.email).first()
-    if existing_username:
+    existing_user = db.query(db_models.User).filter(
+        db_models.User.username == incoming_user.username).first()
+    if existing_user:
         raise HTTPException(status_code=400, detail="User already exists")
     
     new_id = len(users)+1 #USERID
@@ -58,49 +60,59 @@ def register_user(
 
 #Authentication Logic
 @app.post("/auth/login")
-def login_user(login_data: UserLogin):
-    for existing_user in users:
-        if existing_user["email"] == login_data.email:
-            success = verify_password(
+def login_user(
+    login_data: UserLogin,
+    db: Session = Depends(get_db)):
+
+    existing_user = db.query(db_models.User).filter(
+        db_models.User.email == login_data.email).first()
+    if existing_user is None:
+        raise HTTPException(status_code=401, detail="Invalid Username")
+    
+    success = verify_password(
                 login_data.password, 
-                existing_user["password_hash"])
-            if success:
-                access_token = create_access_token(
-                    data={"sub": existing_user["email"]} #who the token belongs to
-                )
-    
-                return {
-                    "access_token" : access_token,
-                    "token_type" : "bearer",
-                }
+                existing_user.password_hash)
+
+    if not success:
+        raise HTTPException(status_code=401, detail="Invalid Email or Password.")
+
+    access_token = create_access_token(data={"sub": existing_user.email}) #who the token belongs to
+                
+    return {
+            "access_token" : access_token,
+            "token_type" : "bearer",
+        }
             
-            raise HTTPException(status_code=401, detail="Invalid email or password")
-    
-    raise HTTPException(status_code=401, detail="Invalid email or password")
 
 #For Swagger OAuth Testing
 @app.post("/auth/token")
-def login_for_swagger(form_data: OAuth2PasswordRequestForm = Depends()):
-    for existing_user in users:
-        if existing_user["email"] == form_data.username:
-            success = verify_password(
-                form_data.password,
-                existing_user["password_hash"]
-            )
+def login_for_swagger(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    existing_user = db.query(db_models.User).filter(
+        db_models.User.email == form_data.username
+    ).first()
 
-            if success:
-                access_token = create_access_token(
-                    data={"sub": existing_user["email"]}
-                )
+    if existing_user is None:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
 
-                return {
-                    "access_token": access_token,
-                    "token_type": "bearer"
-                }
+    success = verify_password(
+        form_data.password,
+        existing_user.password_hash
+    )
 
-            raise HTTPException(status_code=401, detail="Invalid email or password")
+    if not success:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    raise HTTPException(status_code=401, detail="Invalid email or password")
+    access_token = create_access_token(
+        data={"sub": existing_user.email}
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
 
 #Get Current User Information 
 @app.get("/users/me")
@@ -110,6 +122,7 @@ def read_users_me(current_user = Depends(get_current_user)):
         "email": current_user["email"],
         "username": current_user["username"]
     }
+#------------------------------------------------------------------------------
 
 #ACTIVITY RULE LOGIC
 
