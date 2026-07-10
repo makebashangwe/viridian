@@ -4,36 +4,55 @@ from data import users, activity_rules, activity_sessions, goals, rewards, rewar
 from models import UserRegister, UserLogin, ActivityRuleCreate, ActivityRuleChange, ActivitySessionCreate, GoalCreate, RewardCreate
 from auth import hash_password, verify_password, create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
+from database import engine, get_db
+import db_models
 
 #CREATING APPLICATION
 app = FastAPI()
+db_models.Base.metadata.create_all(bind=engine) #SQL Alchemy checks models and creates the matching DB tables if they do not already exist!
 
 @app.get("/")
 def read_root():
     return {"message" : "Viridian API is running"}
 
 #USER & AUTHENTICATION LOGIC
+
 #Register User and generate Hash
 @app.post("/auth/register")
-def register_user(incoming_user: UserRegister):
-    for existing_user in users:
-        if existing_user["email"] == incoming_user.email:
-            raise HTTPException(status_code=400, detail="Email already exists")
-        if existing_user["username"] == incoming_user.username:
-            raise HTTPException(status_code=400, detail="Username already exists")
+def register_user(
+    incoming_user: UserRegister,
+    db: Session = Depends(get_db)): #Open DB (connection/Session to Postgres). When it's done, close it.
 
-    new_id = len(users)+1
+    #Checking if email exists -> bool
+    existing_email = db.query(db_models.User).filter( #Look inside the users table, filter it by email
+        db_models.User.email == incoming_user.email).first() #Find the first user where the email matches the incoming email.
+
+    if existing_email:
+        raise HTTPException(status_code=400, detail="Email already exists")
+   
+   #Checking if username exists -> bool
+    existing_username = db.query(db_models.User).filter(
+        db_models.User.email == incoming_user.email).first()
+    if existing_username:
+        raise HTTPException(status_code=400, detail="User already exists")
+    
+    new_id = len(users)+1 #USERID
+
     hashed_password = hash_password(incoming_user.password)
-    new_user = {
-        "id" : new_id,
-        "email": incoming_user.email,
-        "username": incoming_user.username,
-        "password_hash": hashed_password
-    }
-    users.append(new_user)
-    return {"id": new_user["id"], 
-            "email" : new_user["email"], 
-            "username" : new_user["username"]
+    
+    new_user = db_models.User(
+    email=incoming_user.email,
+    username=incoming_user.username,
+    password_hash=hashed_password
+    )
+
+    db.add(new_user) #Add this new user into the database
+    db.commit() #save the new user into Postgres
+    db.refresh(new_user) #reload this object with the final saved DB row
+
+    return {"id": new_user.id, 
+            "email" : new_user.email, 
+            "username" : new_user.username
             }
 
 

@@ -9,6 +9,7 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     email: str
     password: str
+    
 class ActivityRuleCreate(BaseModel):
     name: str
     difficulty_rank:int

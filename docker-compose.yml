@@ -3,13 +3,14 @@ services:
     image: postgres:16
     container_name: viridian-postgres
     restart: always
-    enviornment:
+    environment:
       POSTGRES_USER: viridian_user
       POSTGRES_PASSWORD: viridian_password
       POSTGRES_DB: viridian_db
     ports:
-    - "5432:5432"
+      - "5432:5432"
     volumes:
-    - viridian_postgres_data:/var/lib/postgresql_data
+      - viridian_postgres_data:/var/lib/postgresql/data
 
-volumes: viridian_postgres_data:
+volumes:
+  viridian_postgres_data:
