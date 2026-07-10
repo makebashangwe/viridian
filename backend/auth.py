@@ -12,7 +12,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = "temporary-dev-secret-key"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login") #“Protected routes should expect a Bearer token.”
+#oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login") #“Protected routes should expect a Bearer token.”
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")#for Swagger Oauth Testing
 
 #A hash is designed so you can verify a password later, but you cannot easily turn the hash back into the original password.
 def hash_password(password: str): #helper function takes in the plain password

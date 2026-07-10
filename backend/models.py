@@ -53,5 +53,5 @@ class RewardCreate(BaseModel):
     point_count: float
     estimated_cost: float
     image_url: str | None = None
-    is_locked: bool = Flase
+    is_locked: bool = False
     required_goal_id: int | None = None

@@ -3,6 +3,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from data import users, activity_rules, activity_sessions, goals, rewards, reward_redemptions #Fake DBs
 from models import UserRegister, UserLogin, ActivityRuleCreate, ActivityRuleChange, ActivitySessionCreate, GoalCreate, RewardCreate
 from auth import hash_password, verify_password, create_access_token, get_current_user
+from fastapi.security import OAuth2PasswordRequestForm
 
 #CREATING APPLICATION
 app = FastAPI()
@@ -56,6 +57,30 @@ def login_user(login_data: UserLogin):
             
             raise HTTPException(status_code=401, detail="Invalid email or password")
     
+    raise HTTPException(status_code=401, detail="Invalid email or password")
+
+#For Swagger OAuth Testing
+@app.post("/auth/token")
+def login_for_swagger(form_data: OAuth2PasswordRequestForm = Depends()):
+    for existing_user in users:
+        if existing_user["email"] == form_data.username:
+            success = verify_password(
+                form_data.password,
+                existing_user["password_hash"]
+            )
+
+            if success:
+                access_token = create_access_token(
+                    data={"sub": existing_user["email"]}
+                )
+
+                return {
+                    "access_token": access_token,
+                    "token_type": "bearer"
+                }
+
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+
     raise HTTPException(status_code=401, detail="Invalid email or password")
 
 #Get Current User Information 
@@ -392,8 +417,8 @@ def get_rewards_summary(current_user = Depends(get_current_user)):
     for goal in goals:
         if goal["user_id"] == current_user["id"]:
             if goal["is_completed"]:
-                completed_goal_count+=1
-                reward_points_earned += goal["rewards_points"]
+                completed_goal_count += 1
+                reward_points_earned += goal["reward_points"]
                 completed_goals.append(goal)
     return {
         "user_id" : current_user["id"],
@@ -404,7 +429,7 @@ def get_rewards_summary(current_user = Depends(get_current_user)):
 
             
 #Goal Progress by ID
-@app.get("goals/{goal_id}/progress")
+@app.get("/goals/{goal_id}/progress")
 def get_goal_progress_by_id(
     goal_id: int,
     current_user = Depends(get_current_user)):
