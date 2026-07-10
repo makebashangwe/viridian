@@ -124,7 +124,7 @@ def read_users_me(current_user = Depends(get_current_user)):
     }
 #------------------------------------------------------------------------------
 
-#ACTIVITY RULE LOGIC
+#ACTIVITY RULE LOGIC [NEXT]
 
 #Creating Activity Rules
 @app.post("/activities")
