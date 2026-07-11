@@ -7,7 +7,7 @@ reward_redemptions = []
 
 #Migration: SQLite -> PostGRE SQL (PHASE 6)
 
-'''
+''' 
 LOCAL POSTGRE SQL
 SQL Alchemy db models 
     convert auth/users

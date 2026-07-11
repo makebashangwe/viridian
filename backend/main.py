@@ -124,76 +124,91 @@ def read_users_me(current_user = Depends(get_current_user)):
     }
 #------------------------------------------------------------------------------
 
-#ACTIVITY RULE LOGIC [NEXT]
+#ACTIVITY RULE LOGIC  [Status: Testing]
 
-#Creating Activity Rules
 @app.post("/activities")
 def create_activity_rule(
-    incoming_activity_rule: ActivityRuleCreate,#accept activity rule data
-    current_user = Depends(get_current_user)):#require the current logged-in user
-    
-    #create the new activity id
-    activity_id = len(activity_rules)+1
-    #add the current user's id as the user_id
-    user_id = current_user["id"]
+    incoming_activity_rule: ActivityRuleCreate,#accept activity rule data,
+    current_user = Depends(get_current_user), #Require current user
+    db: Session=Depends(get_db)): #Access DB
 
-    #save the activity rule to the list
-    new_activity = {
-        "id" : activity_id,
-        "user_id" : user_id,
+    new_activity = db_models.ActivityRule( #IN the DB model Activity rule, create a new_activity
+        user_id=current_user["id"], #appending necessary params
         **incoming_activity_rule.model_dump()
+    )
+
+    db.add(new_activity) #add the new activity
+    db.commit() #commit changes
+    db.refresh(new_activity)
+
+    return {
+        "message": f"Successfully created {new_activity.name}"
     }
-    activity_rules.append(new_activity)
-    #return the new rule
-    return new_activity
 
 #Get Activity Rules
 @app.get("/activities")
-def get_activity_rules(current_user = Depends(get_current_user)):
-    user_activity_rules = []
-    for activity in activity_rules:
-        if activity["user_id"] == current_user["id"]:
-            user_activity_rules.append(activity)
-    return user_activity_rules
+def get_activity_rules(
+    current_user = Depends(get_current_user),
+    db:Session = Depends(get_db)
+):
+    activities = db.query(db_models.ActivityRule).filter(db_models.ActivityRule.user_id == current_user["id"]).all()
+    return activities
 
-#Return by Activity ID
+#Get by Activity ID
 @app.get("/activities/{activity_id}")
 def get_activity_by_id(
     activity_id :int, 
-    current_user = Depends(get_current_user)):
-    for activity in activity_rules:
-        if (activity["user_id"] == current_user["id"]) and (activity["id"] == activity_id):
-            return activity
-    raise HTTPException(status_code=404,detail="Activity not found.")
+    current_user = Depends(get_current_user),
+    db:Session = Depends(get_db)):
+
+    target_activity_rule = db.query(db_models.ActivityRule).filter(db_models.ActivityRule.user_id == current_user["id"]).filter(db_models.ActivityRule.id == activity_id).first()
+    if target_activity_rule == None:
+        raise HTTPException(status_code=404,detail="Activity Rule Not Found.")
+    
+    return target_activity_rule
+
 
 #Edit Activity By ID
 @app.patch("/activities/{activity_id}")
 def edit_activity_by_id(
     activity_id :int,
     updated_activity_rule : ActivityRuleChange,
-    current_user = Depends(get_current_user)):
-    for activity in activity_rules:
-        if (activity["user_id"] == current_user["id"]) and (activity["id"] == activity_id):
-            updated_data = updated_activity_rule.model_dump(exclude_unset=True) #takes out the NONE values
-            activity.update(updated_data)
-            return activity
-    raise HTTPException(status_code=404,detail="Activity not found.")
+    current_user = Depends(get_current_user),
+    db:Session = Depends(get_db)):
+    target_activity_rule = db.query(db_models.ActivityRule).filter(db_models.ActivityRule.user_id == current_user["id"]).filter(db_models.ActivityRule.id == activity_id).first()
+    if target_activity_rule == None:
+        raise HTTPException(status_code=404,detail="Activity Rule Not Found.")
+    updated_data = updated_activity_rule.model_dump(exclude_unset=True) #takes out the NONE values and converts to a dict
+    for key,value in updated_data.items():
+        setattr(target_activity_rule,key,value)
+    db.commit()
+    db.refresh(target_activity_rule)
 
- #delete activity               
+    return target_activity_rule
+
+
+#Delete Activity               
 
 @app.delete("/activities/{activity_id}")
 def delete_activity(
-    activity_id :int, 
-    current_user = Depends(get_current_user)):
-    for activity in activity_rules:
-        if (activity["user_id"] == current_user["id"]) and (activity["id"] == activity_id):
-            activity_rules.remove(activity)
-            return {
-                "message" : "Success."
-            }
-    raise HTTPException(status_code=404,detail="Activity not found.")
+    activity_id :int,
+    current_user = Depends(get_current_user),
+    db:Session = Depends(get_db)
+    ):
+    target_activity_rule = db.query(db_models.ActivityRule).filter(db_models.ActivityRule.user_id == current_user["id"]).filter(db_models.ActivityRule.id == activity_id).first()
+    
+    if target_activity_rule == None:
+        raise HTTPException(status_code=404,detail="Activity Rule Not Found.")
+    
+    db.delete(target_activity_rule)
+    db.commit()
 
-#SESSION LOGIC
+    return {
+            "message" : "Success."
+        }
+    
+#------------------------------------------------------------------------------
+#SESSION LOGIC [NEXT]
 
 #create session
 @app.post("/sessions")
@@ -282,7 +297,9 @@ def delete_session(
             }
     raise HTTPException(status_code=404,detail="Session not found.")
 
+#------------------------------------------------------------------------------
 #XP / POINTS LOGIC
+
 #XP / Point Summary
 @app.get("/xp/summary")
 def get_xp_summary(
@@ -348,6 +365,7 @@ def get_xp_by_activity_id(
         "total_points": xp_by_activity_id
     }
 
+#------------------------------------------------------------------------------
 #GOAL LOGIC
 
 #Create goal
@@ -487,7 +505,7 @@ def get_goals_by_id(
             return goal
     raise HTTPException(status_code=404,detail="Goal Not Found.")
 
-
+#------------------------------------------------------------------------------
 #REWARDS STORE LOGIC
 
 #Create Reward
@@ -587,3 +605,4 @@ def delete_reward(
                 "message": "Success."
             }
     raise HTTPException(status_code=404,detail="Reward Not Found.")
+#------------------------------------------------------------------------------
