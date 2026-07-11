@@ -141,9 +141,7 @@ def create_activity_rule(
     db.commit() #commit changes
     db.refresh(new_activity)
 
-    return {
-        "message": f"Successfully created {new_activity.name}"
-    }
+    return new_activity
 
 #Get Activity Rules
 @app.get("/activities")
