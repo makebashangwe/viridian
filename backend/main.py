@@ -206,7 +206,7 @@ def delete_activity(
         }
     
 #------------------------------------------------------------------------------
-#SESSION LOGIC [Status: Changes Underway]
+#SESSION LOGIC 
 
 #create session
 @app.post("/sessions")
@@ -322,7 +322,7 @@ def delete_session(
     }
 
 #------------------------------------------------------------------------------
-#XP / POINTS LOGIC
+#XP / POINTS LOGIC [Status: Changes Underway]
 
 #XP / Point Summary
 @app.get("/xp/summary")
