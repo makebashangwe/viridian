@@ -35,7 +35,7 @@ class ActivityRuleChange(BaseModel):
     default_location: Optional[str] = None
 
 class ActivitySessionCreate(BaseModel):
-    activity_id: int
+    activity_rule_id: int
     duration_minutes: int
     location: str
     notes: str | None = None

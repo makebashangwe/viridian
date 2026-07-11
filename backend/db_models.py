@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy import Column, Integer, String, Float, Boolean
 from database import Base
 
 class User(Base):
@@ -27,3 +27,20 @@ class ActivityRule(Base):
 
     max_session_minutes =Column (Integer, index=True)
     default_location = Column(String, nullable=False)
+
+class Sessions(Base): #Using plural to prevent name conflict with db: Session
+    __tablename__="sessions"
+    id = Column(Integer, primary_key = True, index = True)
+    activity_rule_id = Column (Integer, index=True, nullable = False)
+    user_id = Column(Integer, index=True, nullable = False)
+
+    activity_name = Column(String, nullable = False)
+    duration_minutes = Column(Integer,  nullable = False)
+    location = Column(String, nullable=False)
+    
+    points_earned = Column(Float, nullable=False)
+    legal_goal_completed = Column(Boolean, nullable=False)
+    main_goal_completed = Column(Boolean, nullable=False)
+    bonus_intervals = Column(Integer, nullable =False)
+    
+    notes = Column(String, nullable=True)

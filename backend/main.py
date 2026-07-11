@@ -206,24 +206,37 @@ def delete_activity(
         }
     
 #------------------------------------------------------------------------------
-#SESSION LOGIC [NEXT]
+#SESSION LOGIC [Status: Changes Underway]
 
 #create session
 @app.post("/sessions")
 def create_activity_session(
     incoming_session: ActivitySessionCreate,#take in activity session data
-    current_user = Depends(get_current_user)):#require the current logged-in user
+    current_user = Depends(get_current_user),
+    db : Session = Depends(get_db)):
 
-    matching_activity = None
-    
-    for activity in activity_rules:
-        if (activity["user_id"] == current_user["id"]) and (activity["id"] == incoming_session.activity_id):
-            matching_activity = activity
-            break
-    if matching_activity is None:
+    '''
+    PLEASE NOTE THE DIFFERENCE! 
+    ActivityRule is the configurations for the Indivisual Session based on parameters specfied in the ActivityRule Object.
+        
+    class Sessions(Base):
+    __tablename__="sessions"
+    id = Column(Integer, primary_key = True, index = True)
+    activity_rule_id = Column (Integer, index=True, nullable = False)
+    user_id = Column(Integer, index=True, nullable = False)
+    ...
+
+    '''
+    #find the matching activity rule information
+    matching_activity_rule = db.query(db_models.ActivityRule).filter(
+        db_models.ActivityRule.user_id == current_user["id"]).filter(
+        db_models.ActivityRule.id == incoming_session.activity_rule_id
+        ).first()
+
+    if matching_activity_rule is None:
         raise HTTPException(status_code=404,detail="Activity Rule Not Found")
     
-    if incoming_session.duration_minutes > matching_activity["max_session_minutes"]: #Prevent 48 hour sessions lol
+    if incoming_session.duration_minutes > matching_activity_rule.max_session_minutes : #Prevent 48 hour sessions lol
         raise HTTPException(status_code = 400, detail="Session exceeds max allowed minutes")
 
     #Point logic
@@ -232,68 +245,81 @@ def create_activity_session(
     main_goal_completed = False
     bonus_intervals = 0
 
-    if incoming_session.duration_minutes >= matching_activity["legal_minutes"]:
+    if incoming_session.duration_minutes >= matching_activity_rule.legal_minutes:
         legal_goal_completed = True
-        points_earned += matching_activity["legal_points"]
+        points_earned += matching_activity_rule.legal_points
 
-    if incoming_session.duration_minutes >= matching_activity["goal_minutes"]:
+    if incoming_session.duration_minutes >= matching_activity_rule.goal_minutes:
         main_goal_completed = True
-        points_earned += matching_activity["goal_points"]
+        points_earned += matching_activity_rule.goal_points
     
-    if incoming_session.duration_minutes > matching_activity["goal_minutes"]:
-        extra_minutes = incoming_session.duration_minutes - matching_activity["goal_minutes"]
-        bonus_intervals = extra_minutes // matching_activity["bonus_interval_minutes"]
-        points_earned += bonus_intervals * matching_activity["bonus_points"]
-    new_session = {
-        "id" : len(activity_sessions) +1,
-        "user_id" : current_user["id"],
-        "activity_id" : matching_activity["id"],
-        "activity_name" : matching_activity["name"],
-        "duration_minutes" : incoming_session.duration_minutes,
-        "location" : incoming_session.location,
-        "points_earned" : points_earned,
-        "legal_goal_completed": legal_goal_completed,
-        "main_goal_completed": main_goal_completed,
-        "bonus_intervals": bonus_intervals,
-        "notes": incoming_session.notes
-    }
-    
-    activity_sessions.append(new_session)
+    if incoming_session.duration_minutes > matching_activity_rule.goal_minutes:
+        extra_minutes = incoming_session.duration_minutes - matching_activity_rule.goal_minutes
+        bonus_intervals = extra_minutes // matching_activity_rule.bonus_interval_minutes
+        points_earned += bonus_intervals * matching_activity_rule.bonus_points
+
+    new_session = db_models.Sessions(
+        user_id = current_user["id"],
+        activity_rule_id = matching_activity_rule.id,
+        
+        activity_name = matching_activity_rule.name,
+        duration_minutes = incoming_session.duration_minutes,
+        location = incoming_session.location,
+        
+        points_earned = points_earned,
+        legal_goal_completed = legal_goal_completed,
+        main_goal_completed = main_goal_completed,
+        bonus_intervals = bonus_intervals,
+        
+        notes = incoming_session.notes
+    )
+    db.add(new_session)
+    db.commit()
+    db.refresh(new_session)
+
     return new_session
 
 #See All Sessions
 @app.get("/sessions")
-def get_sessions(current_user = Depends(get_current_user)):#require the current logged-in user
-    user_sessions = []
+def get_sessions(
+    current_user = Depends(get_current_user),
+    db : Session = Depends(get_db)):
+    user_sessions = db.query(db_models.Sessions).filter(db_models.Sessions.user_id==current_user["id"]).all()
     
-    for session in activity_sessions:
-        if (session["user_id"] == current_user["id"]):
-            user_sessions.append(session)
-
     return user_sessions
+   
     
 #Return by Session ID
 @app.get("/sessions/{session_id}")
 def get_session_by_id(
     session_id :int, 
+    db : Session = Depends(get_db),
     current_user = Depends(get_current_user)):
-    for session in activity_sessions:
-        if (session["user_id"] == current_user["id"]) and (session["id"] == session_id):
-            return session
-    raise HTTPException(status_code=404,detail="Session not found.")
+
+    target_session = db.query(db_models.Sessions).filter(db_models.Sessions.user_id==current_user["id"]).filter(db_models.Sessions.id == session_id).first()
+    if target_session == None:
+        raise HTTPException(status_code=404,detail="Session not found.")
+    
+    return target_session
 
 #delete session               
 @app.delete("/sessions/{session_id}")
 def delete_session(
-    session_id :int, 
+    session_id :int,
+    db : Session = Depends(get_db),
     current_user = Depends(get_current_user)):
-    for session in activity_sessions:
-        if (session["user_id"] == current_user["id"]) and (session["id"] == session_id):
-            activity_sessions.remove(session)
-            return {
-                "message" : "Success."
-            }
-    raise HTTPException(status_code=404,detail="Session not found.")
+
+    target_session = db.query(db_models.Sessions).filter(db_models.Sessions.user_id==current_user["id"]).filter(db_models.Sessions.id == session_id).first()
+    
+    if target_session == None:
+        raise HTTPException(status_code=404,detail="Session not found.")
+    
+    db.delete(target_session)
+    db.commit()
+    
+    return {
+        "message": f"Successfully deleted Session #{session_id}"
+    }
 
 #------------------------------------------------------------------------------
 #XP / POINTS LOGIC
