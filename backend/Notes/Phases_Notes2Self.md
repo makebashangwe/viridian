@@ -14,7 +14,7 @@ Phase 7: SQLite / SQLAlchemy DB [current]
 Phase 8: Front End Conection  
     - WEB FRONT END : REACT
     - MOBILE APP : REACT NATIVE / EXPO
-    
+
     1. Build responsive web app
     2. Make it mobile-friendly in browser
     3. Then build real mobile app later with React Native / Expo
@@ -26,7 +26,7 @@ Phase 9: Containerization (DOCKER)
 
 [MAJOR  MILESTONE]
 
-Phase 10: DB in AWS (FAST API -> PostgreSQL
+Phase 10: DB in AWS (FAST API -> PostgreSQL)
 Postgres → AWS RDS
 Backend → ECS/Fargate or EC2
 Frontend → S3/CloudFront or Amplify
