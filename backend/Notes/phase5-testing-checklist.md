@@ -1,43 +1,43 @@
-# Phase 5.5 Testing Checklist
+Phase 6: Finish Converting DB
 
-## Auth
-- Register user
-- Login user
-- Copy token
-- Authorize in Swagger
-- Test /users/me
+Phase 7A — Complete core persistence
+    Add SQLAlchemy foreign keys and relationships.
+    Rename Sessions to Session or ActivitySession.
+    Convert XP routes to database queries.
+    Add Goal ORM model.
+    Convert goal progress.
+    Add Reward and RewardRedemption ORM models.
+    Convert reward balance and redemption.
+    Remove unused fake-list references.
 
-## Activities
-- POST /activities
-- GET /activities
-- GET /activities/{activity_id}
-- PATCH /activities/{activity_id}
-- DELETE /activities/{activity_id}
+Phase 7B — Stabilize the contract
+Rename models.py to schemas.py.
+Add request validation.
+Add response schemas.
+Standardize route status codes and errors.
+Move secrets/configuration into environment settings.
+Add .env.example.
+Phase 7C — Protect the database
+Add pytest.
+Test authentication and ownership.
+Test scoring boundaries.
+Test XP, goal, and reward calculations.
+Add Alembic.
+Generate the initial migration.
+Remove runtime create_all().
 
-## Sessions
-- POST /sessions
-- GET /sessions
-- GET /sessions/{session_id}
-- DELETE /sessions/{session_id}
+Phase 8 — Backend organization and frontend connection
+Split routes into routers.
+Extract only meaningful reusable calculations into services.
+Add CORS configuration.
+Establish the frontend API client.
+Build the lightweight check-in experience first.
+Keep analytics and elaborate dashboards secondary.
 
-## XP
-- GET /xp/summary
-- GET /xp/by-activity
-- GET /xp/by-activity/{activity_id}
-
-## Goals
-- POST /goals
-- GET /goals
-- GET /goals/progress
-- GET /goals/rewards-summary
-- GET /goals/{goal_id}/progress
-- GET /goals/{goal_id}
-- DELETE /goals/{goal_id}
-
-## Rewards
-- POST /rewards
-- GET /rewards
-- GET /rewards/balance
-- GET /rewards/{reward_id}
-- POST /rewards/{reward_id}/redeem
-- DELETE /rewards/{reward_id}
+Phase 9 — Delivery engineering
+Backend Dockerfile.
+Complete Compose stack.
+GitHub Actions for tests and linting.
+Staging deployment.
+Production secrets and managed PostgreSQL.
+Logging, monitoring, backup, and recovery planning.

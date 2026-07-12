@@ -1,18 +1,34 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean
+from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
 from database import Base
 
 class User(Base):
     __tablename__ = "users"
+    
+    #Keys
     id = Column(Integer, primary_key=True,index=True)
+    
+    #Other Attributes
     email = Column (String, unique = True, index = True, nullable = False)
     username = Column(String, unique = True, index = True, nullable = False)
     password_hash = Column(String, nullable = False)
+    
+    #Relationships
+    activity_rules = relationship("ActivityRule", 
+                                  back_populates="user"
+                                  )
+    activity_sessions = relationship("ActivitySession", 
+                                     back_populates="user"
+                                     )
 
 class ActivityRule(Base):
     __tablename__ = "activity_rules"
-    id = Column(Integer, primary_key=True,index=True)
-    user_id = Column(Integer, index=True, nullable = False)
 
+    #Keys
+    id = Column(Integer, primary_key=True,index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable = False)
+    
+    #Other Attributes
     name = Column (String, index=True, nullable = False,)
     difficulty_rank = Column (Integer, index=True)
 
@@ -28,12 +44,25 @@ class ActivityRule(Base):
     max_session_minutes =Column (Integer, index=True)
     default_location = Column(String, nullable=False)
 
-class Sessions(Base): #Using plural to prevent name conflict with db: Session
+    #Relationships
+    user = relationship("User",
+                        back_populates = "activity_rules"
+                        )
+    
+    activity_sessions = relationship("ActivitySession", 
+                                     back_populates = "activity_rule"
+                                     )
+    
+class ActivitySession(Base): #Using ActivitySession to prevent name conflict with db: Session
     __tablename__="sessions"
-    id = Column(Integer, primary_key = True, index = True)
-    activity_rule_id = Column (Integer, index=True, nullable = False)
-    user_id = Column(Integer, index=True, nullable = False)
+    
 
+    #Keys
+    id = Column(Integer, primary_key = True, index = True)
+    activity_rule_id = Column(Integer, ForeignKey("activity_rules.id"),index=True, nullable = False)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable = False)
+
+    #Other Attributes
     activity_name = Column(String, nullable = False)
     duration_minutes = Column(Integer,  nullable = False)
     location = Column(String, nullable=False)
@@ -44,3 +73,11 @@ class Sessions(Base): #Using plural to prevent name conflict with db: Session
     bonus_intervals = Column(Integer, nullable =False)
     
     notes = Column(String, nullable=True)
+    
+    #Relationships
+    user = relationship("User", 
+                        back_populates="activity_sessions")
+    
+    activity_rule = relationship("ActivityRule", 
+                                  back_populates="activity_sessions"
+                                  )

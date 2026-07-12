@@ -184,8 +184,8 @@ def edit_activity_by_id(
 
     return target_activity_rule
 
-
-#Delete Activity               
+'''
+#ARCHIVE: An Activity RULE cannot be physically deleted while Session References it...          
 
 @app.delete("/activities/{activity_id}")
 def delete_activity(
@@ -204,6 +204,7 @@ def delete_activity(
     return {
             "message" : "Success."
         }
+'''
     
 #------------------------------------------------------------------------------
 #SESSION LOGIC 
@@ -258,7 +259,7 @@ def create_activity_session(
         bonus_intervals = extra_minutes // matching_activity_rule.bonus_interval_minutes
         points_earned += bonus_intervals * matching_activity_rule.bonus_points
 
-    new_session = db_models.Sessions(
+    new_session = db_models.ActivitySession(
         user_id = current_user["id"],
         activity_rule_id = matching_activity_rule.id,
         
@@ -284,7 +285,7 @@ def create_activity_session(
 def get_sessions(
     current_user = Depends(get_current_user),
     db : Session = Depends(get_db)):
-    user_sessions = db.query(db_models.Sessions).filter(db_models.Sessions.user_id==current_user["id"]).all()
+    user_sessions = db.query(db_models.ActivitySession).filter(db_models.ActivitySession.user_id==current_user["id"]).all()
     
     return user_sessions
    
@@ -296,7 +297,7 @@ def get_session_by_id(
     db : Session = Depends(get_db),
     current_user = Depends(get_current_user)):
 
-    target_session = db.query(db_models.Sessions).filter(db_models.Sessions.user_id==current_user["id"]).filter(db_models.Sessions.id == session_id).first()
+    target_session = db.query(db_models.ActivitySession).filter(db_models.ActivitySession.user_id==current_user["id"]).filter(db_models.ActivitySession.id == session_id).first()
     if target_session == None:
         raise HTTPException(status_code=404,detail="Session not found.")
     
@@ -309,7 +310,7 @@ def delete_session(
     db : Session = Depends(get_db),
     current_user = Depends(get_current_user)):
 
-    target_session = db.query(db_models.Sessions).filter(db_models.Sessions.user_id==current_user["id"]).filter(db_models.Sessions.id == session_id).first()
+    target_session = db.query(db_models.ActivitySession).filter(db_models.ActivitySession.user_id==current_user["id"]).filter(db_models.ActivitySession.id == session_id).first()
     
     if target_session == None:
         raise HTTPException(status_code=404,detail="Session not found.")
@@ -327,7 +328,9 @@ def delete_session(
 #XP / Point Summary
 @app.get("/xp/summary")
 def get_xp_summary(
-    current_user = Depends(get_current_user)):
+    current_user = Depends(get_current_user),
+    db : Session = Depends(get_db)):
+
 
     total_points = 0
     total_sessions = 0
