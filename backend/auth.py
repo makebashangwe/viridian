@@ -7,13 +7,16 @@ from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from database import get_db
 import db_models
+from config import (
+    JWT_SECRET_KEY,
+    JWT_ALGORITHM,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+)
 
 #hashing algorithm that knows how to hash and verify that hash, and whether the old one is deprecated.
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 #uses bcrypt.
-SECRET_KEY = "temporary-dev-secret-key"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
 #oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login") #“Protected routes should expect a Bearer token.”
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")#for Swagger Oauth Testing
 
@@ -31,7 +34,7 @@ def create_access_token(data: dict):
     
     to_encode.update({"exp": expire})
 
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM) #turns the data into the token string
+    encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM) #turns the data into the token string
 
     return encoded_jwt
 
@@ -40,7 +43,7 @@ def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         email = payload.get("sub")
 
         if email is None:

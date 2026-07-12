@@ -10,13 +10,14 @@ Phase 7A — Complete core persistence [STATUS: COMPLETE]
     Convert reward balance and redemption.
     Remove unused fake-list references.
 
-Phase 7B — Stabilize the contract
-Rename models.py to schemas.py.
-Add request validation.
-Add response schemas.
+Phase 7B — Stabilize the contract [STATUS: IN  PROGRESS]
+/Rename models.py to schemas.py.
+Add request validation [IN PROGRESS]
+Add response schemas [IN PROGRESS]
 Standardize route status codes and errors.
-Move secrets/configuration into environment settings.
-Add .env.example.
+/ Move secrets/configuration into environment settings.
+Add .env.example[IN PROGRESS]
+
 Phase 7C — Protect the database
 Add pytest.
 Test authentication and ownership.

@@ -34,7 +34,6 @@ class ActivityRuleCreate(BaseModel):
     max_session_minutes: int = Field(gt=0)
     default_location: str = Field(min_length=1, max_length=100)
     
-    is_active : bool = True
 
     @model_validator(mode="after")
     def validate_minute_order(self):
