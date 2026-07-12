@@ -46,6 +46,7 @@ class GoalCreate(BaseModel):
     target_type: str  #ex. "points_earned"
     target_value: float #ex. 30
     reward_points: float #ex. 5
+    activity_rule_id: int | None = None
 
 class RewardCreate(BaseModel):
     name: str

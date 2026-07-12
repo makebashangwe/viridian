@@ -20,7 +20,10 @@ class User(Base):
     activity_sessions = relationship("ActivitySession", 
                                      back_populates="user"
                                      )
-
+    goals = relationship("Goal", 
+                        back_populates="user"
+                        )
+    
 class ActivityRule(Base):
     __tablename__ = "activity_rules"
 
@@ -52,10 +55,12 @@ class ActivityRule(Base):
     activity_sessions = relationship("ActivitySession", 
                                      back_populates = "activity_rule"
                                      )
+    goals = relationship("Goal",
+                        back_populates="activity_rule"
+                        )
     
 class ActivitySession(Base): #Using ActivitySession to prevent name conflict with db: Session
     __tablename__="sessions"
-    
 
     #Keys
     id = Column(Integer, primary_key = True, index = True)
@@ -81,3 +86,26 @@ class ActivitySession(Base): #Using ActivitySession to prevent name conflict wit
     activity_rule = relationship("ActivityRule", 
                                   back_populates="activity_sessions"
                                   )
+
+class Goal(Base):
+    __tablename__ = "goals"
+    id = Column(Integer, primary_key=True, index = True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    activity_rule_id = Column(Integer,ForeignKey("activity_rules.id"),nullable=True,index=True)
+
+    title = Column(String,nullable=False)
+    description = Column(String,nullable=False)
+    target_type = Column(String,nullable=False)
+    
+    target_value = Column(Float,nullable=False)
+    reward_points = Column(Float,nullable=False)
+    progress_value = Column(Float,nullable = False,default=0)
+    is_completed = Column(Boolean,nullable=False, default= False)
+
+    user = relationship("User",
+                        back_populates="goals"
+                        )
+    
+    activity_rule = relationship("ActivityRule",
+                                 back_populates="goals"
+                                 )

@@ -3,7 +3,7 @@ from database import engine, get_db
 import db_models
 from sqlalchemy.orm import Session
 from fastapi import FastAPI, HTTPException, Depends
-from data import users, activity_rules, activity_sessions, goals, rewards, reward_redemptions #Fake DBs
+from data import rewards, reward_redemptions #Fake DBs
 from models import UserRegister, UserLogin, ActivityRuleCreate, ActivityRuleChange, ActivitySessionCreate, GoalCreate, RewardCreate
 from auth import hash_password, verify_password, create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
@@ -38,8 +38,6 @@ def register_user(
     if existing_user:
         raise HTTPException(status_code=400, detail="User already exists")
     
-    new_id = len(users)+1 #USERID
-
     hashed_password = hash_password(incoming_user.password)
     
     new_user = db_models.User(
@@ -205,7 +203,7 @@ def delete_activity(
             "message" : "Success."
         }
 '''
-    
+
 #------------------------------------------------------------------------------
 #SESSION LOGIC 
 
@@ -218,9 +216,9 @@ def create_activity_session(
 
     '''
     PLEASE NOTE THE DIFFERENCE! 
-    ActivityRule is the configurations for the Indivisual Session based on parameters specfied in the ActivityRule Object.
+    ActivityRule is the configurations for the Individual Session based on parameters specified in the ActivityRule Object.
         
-    class Sessions(Base):
+    class ActivitySession(Base):
     __tablename__="sessions"
     id = Column(Integer, primary_key = True, index = True)
     activity_rule_id = Column (Integer, index=True, nullable = False)
@@ -285,6 +283,7 @@ def create_activity_session(
 def get_sessions(
     current_user = Depends(get_current_user),
     db : Session = Depends(get_db)):
+    
     user_sessions = db.query(db_models.ActivitySession).filter(db_models.ActivitySession.user_id==current_user["id"]).all()
     
     return user_sessions
@@ -323,7 +322,7 @@ def delete_session(
     }
 
 #------------------------------------------------------------------------------
-#XP / POINTS LOGIC [Status: Changes Underway]
+#XP / POINTS LOGIC 
 
 #XP / Point Summary
 @app.get("/xp/summary")
@@ -331,7 +330,7 @@ def get_xp_summary(
     current_user = Depends(get_current_user),
     db : Session = Depends(get_db)):
 
-
+    
     total_points = 0
     total_sessions = 0
 
@@ -339,16 +338,24 @@ def get_xp_summary(
     main_goal_completed_total = 0
     legal_goal_completed_total = 0
 
-    for session in activity_sessions:
-        if (session["user_id"] == current_user["id"]):
-            total_points += session["points_earned"]
-            total_sessions +=1
-            if session["legal_goal_completed"]:
-                legal_goal_completed_total+=1
-            if session["main_goal_completed"]:
-                main_goal_completed_total +=1
-            if session ["bonus_intervals"]:
-                bonus_intervals_total += session["bonus_intervals"]
+    #find session based on user id and calculation logic
+    activity_sessions = (
+        db.query(db_models.ActivitySession)
+        .filter(db_models.ActivitySession.user_id==current_user["id"]
+        )
+        .all()
+    )
+    
+    for activity_session in activity_sessions:
+        total_points += activity_session.points_earned
+        total_sessions +=1
+        bonus_intervals_total += activity_session.bonus_intervals
+        
+        if activity_session.legal_goal_completed:
+            legal_goal_completed_total+=1
+        
+        if activity_session.main_goal_completed:
+            main_goal_completed_total +=1            
 
     return {
         "user_id" : current_user["id"],
@@ -362,146 +369,275 @@ def get_xp_summary(
 #XP / Points by Activity Type
 @app.get("/xp/by-activity")
 def get_xp_by_activity(
-    current_user = Depends(get_current_user)):
+    current_user = Depends(get_current_user),
+    db : Session = Depends(get_db)):
+
+    target_activity = (
+    db.query(db_models.ActivityRule)
+    .filter(
+        db_models.ActivityRule.user_id == current_user["id"],
+    )
+    .first()
+)
+    if target_activity is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No Activity Rules Found."
+        )
+    
     xp_by_activity = {}
-    for session in activity_sessions:
-        if (session["user_id"] == current_user["id"]):
-            if session["activity_name"] in xp_by_activity:
-                xp_by_activity[session["activity_name"]] += session["points_earned"]
-            else:
-                xp_by_activity[session["activity_name"]] = session["points_earned"]
+    
+    #find session based on user id 
+    activity_sessions = (
+        db.query(db_models.ActivitySession)
+        .filter(db_models.ActivitySession.user_id==current_user["id"]
+        )
+        .all()
+    )
+    
+    for activity_session in activity_sessions:
+        if activity_session.activity_name in xp_by_activity:
+            xp_by_activity[activity_session.activity_name] += activity_session.points_earned
+        else:
+            xp_by_activity[activity_session.activity_name] = activity_session.points_earned
     return {
         "user_id": current_user["id"],
         "xp_by_activity": xp_by_activity
     }
 
         
-#XP / Points by Activity ID
-@app.get("/xp/by-activity/{activity_id}")
+#XP / Points by Activity Rule ID
+@app.get("/xp/by-activity/{activity_rule_id}")
 def get_xp_by_activity_id(
-    activity_id:int,
-    current_user = Depends(get_current_user)):
+    activity_rule_id:int,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)):
+    
+    #IF I EXIST:
+    activity_sessions = (
+        db.query(db_models.ActivitySession)
+        .filter(db_models.ActivitySession.user_id==current_user["id"]
+        )
+        .filter(db_models.ActivitySession.activity_rule_id == activity_rule_id)
+        .all()
+    )
+   
     xp_by_activity_id = 0
-    for session in activity_sessions:
-        if (session["user_id"] == current_user["id"]):
-            if session["activity_id"] == activity_id:
-                xp_by_activity_id+=session["points_earned"]
+
+    for activity_session in activity_sessions:
+        xp_by_activity_id+=activity_session.points_earned
+    
     return {
         "user_id": current_user["id"],
-        "activity_id": activity_id,
+        "activity_rule_id": activity_rule_id,
         "total_points": xp_by_activity_id
     }
 
+#XP / Points by Session ID
+@app.get("/xp/by-session/{session_id}")
+def get_xp_by_session_id(
+    session_id:int,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)):
+    
+    activity_session = (
+        db.query(db_models.ActivitySession)
+        .filter(db_models.ActivitySession.user_id==current_user["id"]
+        )
+        .filter(db_models.ActivitySession.id == session_id)
+        .first()
+    )
+    
+    if activity_session == None:
+        raise HTTPException(status_code = 404, detail="Session not found.")
+
+    
+    return {
+        "user_id": current_user["id"],
+        "session_id": session_id,
+        "total_points": activity_session.points_earned
+    }
+
 #------------------------------------------------------------------------------
-#GOAL LOGIC
+#GOAL LOGIC  
 
 #Create goal
 @app.post("/goals")
 def create_goal(
     incoming_goal_data: GoalCreate,
-    current_user = Depends(get_current_user)):
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)):
     
-    new_goal = {
-        "id" : len(goals)+1,
-        "user_id" : current_user["id"],
-        "progress_value": 0,
-        "is_completed" : False,
-
+    if incoming_goal_data.activity_rule_id is not None:
+        matching_activity_rule = (
+            db.query(db_models.ActivityRule)
+            .filter(
+                db_models.ActivityRule.user_id == current_user["id"],
+                db_models.ActivityRule.id==incoming_goal_data.activity_rule_id
+                )
+            .first()
+        )
+        if matching_activity_rule == None:
+            raise HTTPException(status_code=404,detail="Activity Rule not Found")
+    
+    
+    new_goal = db_models.Goal(
+        user_id = current_user["id"],
         **incoming_goal_data.model_dump()
-    }
-    goals.append(new_goal)
+    )
+
+    db.add(new_goal)
+    db.commit()
+    db.refresh(new_goal)
 
     return new_goal
+
     
 #See all goals
 @app.get("/goals")
-def get_goals(current_user = Depends(get_current_user)):#require the current logged-in user
-    user_goals = []
-    
-    for goal in goals:
-        if (goal["user_id"] == current_user["id"]):
-            user_goals.append(goal)
-
-    return user_goals
+def get_goals(
+    current_user = Depends(get_current_user),
+    db:Session= Depends(get_db)):
+    goals = (
+        db.query(db_models.Goal)
+        .filter(db_models.Goal.user_id ==current_user["id"],
+        )
+        .all()
+    )
+    return goals
 
 
 #Delete Goal
 @app.delete("/goals/{goal_id}")
 def delete_goal(
     goal_id : int,
-    current_user = Depends(get_current_user)):
-    for goal in goals:
-        if goal["user_id"] == current_user["id"] and goal["id"] == goal_id:
-            goals.remove(goal)
-            return {
+    current_user = Depends(get_current_user),
+    db:Session= Depends(get_db)):
+    
+    target_goal = (
+        db.query(db_models.Goal)
+        .filter(db_models.Goal.user_id ==current_user["id"],
+                db_models.Goal.id == goal_id
+        )
+        .first()
+    )
+
+    if target_goal == None:
+        raise HTTPException(status_code=404,detail="Goal Not Found")
+
+    db.delete(target_goal)
+    db.commit()
+
+    return {
                 "message": "Success."
             }
-    raise HTTPException(status_code=404,detail="Goal Not Found.")
 
+#-----------------------------------------------------------------------------
 #GOAL PROGRESS LOGIC
 
-#See All progress
-@app.get("/goals/progress")
-def get_goals_progress(current_user = Depends(get_current_user)):
+#HELPER FUCNTIONS:
+def calculate_stats(sessions):
     total_xp = 0
     total_sessions = 0
     legal_goals_completed = 0
     main_goals_completed = 0
     bonus_intervals = 0
 
-    for session in activity_sessions:
-        if (session["user_id"] == current_user["id"]):
-            total_xp += session["points_earned"]
-            total_sessions +=1
+    for session in sessions:
+        total_xp += session.points_earned
+        total_sessions += 1
+        bonus_intervals += session.bonus_intervals
 
-            if session["legal_goal_completed"]:
-                legal_goals_completed+=1
+        if session.legal_goal_completed:
+            legal_goals_completed += 1
 
-            if session["main_goal_completed"]:
-                main_goals_completed +=1
+        if session.main_goal_completed:
+            main_goals_completed += 1
 
-            bonus_intervals += session["bonus_intervals"]
-    stats = {
-        "total_xp" : total_xp,
-        "total_sessions" : total_sessions,
+    return {
+        "total_xp": total_xp,
+        "total_sessions": total_sessions,
         "legal_goals_completed": legal_goals_completed,
         "main_goals_completed": main_goals_completed,
-        "bonus_intervals" : bonus_intervals
+        "bonus_intervals": bonus_intervals
     }
+def update_user_goal_progress(current_user_id, db):
+    activity_sessions = (
+        db.query(db_models.ActivitySession)
+        .filter(db_models.ActivitySession.user_id==current_user_id
+        )
+        .all()
+    )
+    goals = (
+        db.query(db_models.Goal)
+        .filter(db_models.Goal.user_id == current_user_id,
+        )
+        .all()
+    )
 
-    updated_goals = []
     for goal in goals:
-        if goal["user_id"] == current_user["id"]:
-            target_type = goal["target_type"]
-            if target_type in stats:
-                goal["progress_value"] = stats[target_type]
-            if goal["progress_value"] >= goal["target_value"]:
-                goal["is_completed"] = True
-            else:
-                goal["is_completed"] = False
-            updated_goals.append(goal)
+        
+        if goal.activity_rule_id is None:
+            relevant_sessions = activity_sessions
+        else:
+            relevant_sessions = [
+                session
+                for session in activity_sessions
+                if session.activity_rule_id == goal.activity_rule_id
+            ]
+        
+        stats = calculate_stats(relevant_sessions)
+        target_type = goal.target_type
 
-    return updated_goals
+        if target_type in stats: #Will Be changing this in Phase 7B
+            goal.progress_value = stats[target_type]
+          
+        goal.is_completed = goal.progress_value >= goal.target_value
+
+    db.commit()
+
+    for goal in goals:
+        db.refresh(goal)
+    
+    return goals
+
+#See All Updated Goal Progress
+@app.get("/goals/progress")
+def get_goals_progress(
+    current_user = Depends(get_current_user),
+    db:Session = Depends(get_db)):
+    
+    goals = update_user_goal_progress(current_user["id"],db)
+    
+    return goals
 
 
 #Goal Rewards
 @app.get("/goals/rewards-summary")
-def get_rewards_summary(current_user = Depends(get_current_user)):
-    completed_goal_count = 0
-    reward_points_earned = 0
-    completed_goals = []
+def get_rewards_summary(
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)):
+    
+    update_user_goal_progress(current_user["id"],db)
+    
+    completed_goals = (
+        db.query(db_models.Goal)
+        .filter(db_models.Goal.user_id ==current_user["id"],
+                db_models.Goal.is_completed==True
+        )
+        .all()
+    )
 
-    for goal in goals:
-        if goal["user_id"] == current_user["id"]:
-            if goal["is_completed"]:
-                completed_goal_count += 1
-                reward_points_earned += goal["reward_points"]
-                completed_goals.append(goal)
+    reward_points_earned = 0
+
+    for goal in completed_goals:
+        reward_points_earned += goal.reward_points
+
     return {
         "user_id" : current_user["id"],
         "completed_goals" : completed_goals,
         "reward_points_earned": reward_points_earned,
-        "completed_goal_count": completed_goal_count
+        "completed_goal_count": len(completed_goals)
     }
 
             
@@ -509,31 +645,52 @@ def get_rewards_summary(current_user = Depends(get_current_user)):
 @app.get("/goals/{goal_id}/progress")
 def get_goal_progress_by_id(
     goal_id: int,
-    current_user = Depends(get_current_user)):
-    for goal in goals:
-        if goal["user_id"] == current_user["id"] and goal["id"] == goal_id:
-            return {
-                "goal_id": goal["id"],
-                "title": goal["title"],
-                "progress_value" : goal["progress_value"],
-                "target_value": goal["target_value"],
-                "is_completed": goal["is_completed"]
-            }
+    current_user = Depends(get_current_user),
+    db:Session=Depends(get_db)):
+    
+    update_user_goal_progress(current_user["id"],db)
+    
+    goal = (
+        db.query(db_models.Goal)
+        .filter(db_models.Goal.user_id ==current_user["id"],
+                db_models.Goal.id == goal_id
+        )
+        .first()
+    )
+    if goal == None:
+        raise HTTPException(status_code=404,detail="Goal Not Found.")
+    
+    return {
+            "goal_id": goal.id,
+            "title" : goal.title,
+            "progress_value" : goal.progress_value,
+            "target_value" : goal.target_value,
+            "is_completed" : goal.is_completed
+        }
 
-    raise HTTPException(status_code=404,detail="Goal Not Found.")
 
 #Find Goal by ID
 @app.get("/goals/{goal_id}")
 def get_goals_by_id(
     goal_id: int,
-    current_user = Depends(get_current_user)):
-    for goal in goals:
-        if goal["user_id"] == current_user["id"] and goal["id"] == goal_id:
-            return goal
-    raise HTTPException(status_code=404,detail="Goal Not Found.")
+    current_user = Depends(get_current_user),
+    db:Session = Depends(get_db)):
+    goal = (
+        db.query(db_models.Goal)
+        .filter(db_models.Goal.user_id ==current_user["id"],
+                db_models.Goal.id == goal_id
+        )
+        .first()
+    )
+    
+    if goal == None:
+        raise HTTPException(status_code=404,detail="Goal Not Found.")
+    
+
+    return goal
 
 #------------------------------------------------------------------------------
-#REWARDS STORE LOGIC
+#REWARDS STORE LOGIC [Status: Changes Underway]
 
 #Create Reward
 @app.post("/rewards")
