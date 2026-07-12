@@ -57,7 +57,8 @@ class ActivityRule(Base):
 
     max_session_minutes =Column (Integer, index=True)
     default_location = Column(String, nullable=False)
-
+    is_active = Column(Boolean, nullable=False, default=True)
+    
     #Relationships
     user = relationship("User",
                         back_populates = "activity_rules"

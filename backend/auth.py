@@ -4,7 +4,6 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from data import users
 from sqlalchemy.orm import Session
 from database import get_db
 import db_models
