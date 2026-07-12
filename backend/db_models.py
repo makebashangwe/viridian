@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, DateTime, String, Float, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from database import Base
+from datetime import datetime
 
 class User(Base):
     __tablename__ = "users"
@@ -24,6 +25,16 @@ class User(Base):
                         back_populates="user"
                         )
     
+    rewards = relationship("Reward",
+                           back_populates="user")
+    
+    reward_redemptions = relationship("RewardRedemption", 
+                                    back_populates= "user")
+    archived_rewards = relationship(
+    "RewardsArchive",
+    back_populates="user"
+    )
+
 class ActivityRule(Base):
     __tablename__ = "activity_rules"
 
@@ -58,6 +69,7 @@ class ActivityRule(Base):
     goals = relationship("Goal",
                         back_populates="activity_rule"
                         )
+
     
 class ActivitySession(Base): #Using ActivitySession to prevent name conflict with db: Session
     __tablename__="sessions"
@@ -90,8 +102,8 @@ class ActivitySession(Base): #Using ActivitySession to prevent name conflict wit
 class Goal(Base):
     __tablename__ = "goals"
     id = Column(Integer, primary_key=True, index = True)
-    user_id = Column(Integer, ForeignKey("users.id"), index=True)
-    activity_rule_id = Column(Integer,ForeignKey("activity_rules.id"),nullable=True,index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    activity_rule_id = Column(Integer,ForeignKey("activity_rules.id"), nullable=True,index=True)
 
     title = Column(String,nullable=False)
     description = Column(String,nullable=False)
@@ -109,3 +121,82 @@ class Goal(Base):
     activity_rule = relationship("ActivityRule",
                                  back_populates="goals"
                                  )
+    
+    rewards = relationship("Reward",
+                           back_populates="required_goal"
+    )
+    
+    
+class Reward(Base):
+    __tablename__ = "rewards"
+    id = Column(Integer, primary_key=True, index = True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    required_goal_id= Column(Integer,ForeignKey("goals.id"),nullable=True,index=True)
+
+    name =Column(String, nullable = False)
+    description =Column(String, nullable = False)
+    tag  =Column(String, nullable = False)
+    point_cost = Column(Float,nullable=False)
+    estimated_cost = Column(Float,nullable=False)
+    is_locked= Column(Boolean,nullable=False,default = False)
+    image_url = Column(String, nullable = True) 
+
+    user = relationship("User",
+                        back_populates="rewards"
+                        )
+    
+    required_goal = relationship("Goal",
+    back_populates="rewards"
+    )
+
+    redemptions = relationship("RewardRedemption",
+    back_populates="reward"
+    )
+    
+    
+class RewardRedemption(Base):
+    __tablename__ = "reward_redemptions"
+    id = Column(Integer, primary_key=True, nullable=False, index = True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False,index=True)
+    reward_id =Column(Integer,ForeignKey("rewards.id", ondelete="SET NULL"),nullable=True, index=True)
+    
+    redeemed_at = Column(DateTime, nullable=False, default = datetime.utcnow) #UPDATE WHEN I STANDARDIZE TIMEZONE MODELS
+    
+    reward_name =Column(String, nullable = False)
+    point_cost = Column(Float,nullable=False)
+    
+    user = relationship("User",
+                        back_populates="reward_redemptions"
+                        )
+    reward = relationship("Reward",
+                          back_populates="redemptions"
+    )
+
+class RewardsArchive(Base):
+    __tablename__ = "rewards_archive"
+
+    id = Column(Integer, primary_key=True, index = True)
+    original_reward_id = Column(Integer,nullable=False,index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    
+    required_goal_id= Column(Integer,nullable=True,index=True)
+    required_goal_title= Column(String,nullable=True,index=True)
+
+    name =Column(String, nullable = False)
+    description =Column(String, nullable = False)
+    tag  =Column(String, nullable = False)
+    
+    point_cost = Column(Float,nullable=False)
+    estimated_cost = Column(Float,nullable=False)
+    
+    is_locked= Column(Boolean,nullable=False,default = False)
+    
+    image_url = Column(String, nullable = True) 
+    archived_at = Column(DateTime, nullable=False, default = datetime.utcnow) #UPDATE WHEN I STANDARDIZE TIMEZONE MODELS
+    
+    
+    user = relationship("User",
+                        back_populates="archived_rewards"
+                        )
+    
+    

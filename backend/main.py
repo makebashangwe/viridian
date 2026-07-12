@@ -691,102 +691,215 @@ def get_goals_by_id(
 
 #------------------------------------------------------------------------------
 #REWARDS STORE LOGIC [Status: Changes Underway]
+#HELPER FUNCTIONS 
+#CALCULATE BALANCE
+def get_user_balance(current_user_id,db):
 
-#Create Reward
-@app.post("/rewards")
-def create_reward(
-    incoming_reward: RewardCreate,
-    current_user = Depends(get_current_user)):
-    new_reward = {
-        "id": len(rewards)+1,
-        "user_id": current_user["id"],
-        **incoming_reward.model_dump()
-    }
-    rewards.append(new_reward)
-    return new_reward
+    update_user_goal_progress(current_user_id,db)
 
-#See All Rewards
-@app.get("/rewards")
-def get_all_rewards(current_user = Depends(get_current_user)):
-    user_rewards = []
-    for reward in rewards:
-        if reward["user_id"] == current_user["id"]:
-            user_rewards.append(reward)
-    return user_rewards
-
-#View Reward Balance
-@app.get("/rewards/balance")
-def get_reward_balance(current_user=Depends(get_current_user)):
+    reward_redemptions = (
+        db.query(db_models.RewardRedemption)
+        .filter(db_models.RewardRedemption.user_id == current_user_id)
+        .all()
+    )
+    
+    completed_goals = (
+        db.query(db_models.Goal)
+        .filter(db_models.Goal.user_id ==current_user_id,
+                db_models.Goal.is_completed==True
+        )
+        .all()
+    )
     reward_points_earned = 0
     reward_points_spent = 0
 
-    for goal in goals:
-        if goal["user_id"] == current_user["id"] and goal["is_completed"]:
-            reward_points_earned += goal["reward_points"]
+    for goal in completed_goals:
+        reward_points_earned += goal.reward_points
+    
     for redemption in reward_redemptions:
-        if redemption["user_id"] == current_user["id"]:
-            reward_points_spent += redemption["point_cost"]
+        reward_points_spent += redemption.point_cost
+    
     available_balance = reward_points_earned-reward_points_spent
-    return{
-        "user_id" : current_user["id"],
+    
+    return {
+        "user_id" : current_user_id,
         "reward_points_earned" : reward_points_earned,
         "reward_points_spent": reward_points_spent,
         "available_balance" : available_balance
     }
 
+#Create Reward
+@app.post("/rewards")
+def create_reward(
+    incoming_reward: RewardCreate,
+    current_user = Depends(get_current_user),
+    db : Session = Depends(get_db)):
+    if incoming_reward.required_goal_id is not None:
+        matching_goal_id = (
+            db.query(db_models.Goal)
+            .filter(db_models.Goal.user_id == current_user["id"])
+            .filter(db_models.Goal.id == incoming_reward.required_goal_id)
+            .first()
+        )
+        if matching_goal_id == None:
+            raise HTTPException(status_code=404,detail="Goal not Found.")
+    
+    if (incoming_reward.is_locked and incoming_reward.required_goal_id is None):
+            raise HTTPException(status_code=400, detail="Locked rewards require a goal.")
+    
+    new_reward = db_models.Reward (
+        user_id = current_user["id"],
+        **incoming_reward.model_dump()
+        )
+    
+    db.add(new_reward)
+    db.commit()
+    db.refresh(new_reward)
+
+    return new_reward
+
+#See All Rewards
+@app.get("/rewards")
+def get_all_rewards(
+    current_user = Depends(get_current_user),
+    db:Session = Depends(get_db)):
+    rewards = (
+        db.query(db_models.Reward)
+        .filter(db_models.Reward.user_id == current_user["id"])
+        .all()
+    )
+    
+    return rewards
+
+#View Reward Balance
+@app.get("/rewards/balance")
+def get_reward_balance(
+    current_user=Depends(get_current_user),
+    db:Session = Depends(get_db)):
+    
+    user_balance_info = get_user_balance(current_user["id"],db)
+    
+    return user_balance_info
+
 #Redeem by Reward ID
 @app.post("/rewards/{reward_id}/redeem")
 def redeem_reward(
     reward_id : int,
-    current_user = Depends(get_current_user)):
-    for reward in rewards:
-        if reward["user_id"] == current_user["id"]:
-            if reward["id"] == reward_id:
-                reward_points_earned = 0
-                reward_points_spent = 0
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)):
 
-                for goal in goals:
-                    if goal["user_id"] == current_user["id"] and goal["is_completed"]:
-                        reward_points_earned += goal["reward_points"]
-                for redemption in reward_redemptions:
-                    if redemption["user_id"] == current_user["id"]:
-                        reward_points_spent += redemption["point_cost"]
-                available_balance = reward_points_earned-reward_points_spent
-                if available_balance < reward["point_cost"]:
-                    raise HTTPException(status_code = 400, detail="Not Enough Points")
-                else:
-                    new_redemption = {
-                        "id" : len(reward_redemptions)+1,
-                        "user_id" : current_user["id"],
-                        "reward_id" : reward["id"],
-                        "reward_name": reward["name"],
-                        "point_cost": reward["point_cost"]
-                    }
-                    reward_redemptions.append(new_redemption)
-                    return new_redemption
-    raise HTTPException(status_code=404,detail="Reward Not Found.")
+    reward = (
+        db.query(db_models.Reward)
+        .filter(db_models.Reward.user_id==current_user["id"])
+        .filter(db_models.Reward.id == reward_id)
+        .first()
+    )
+    if reward == None:
+        raise HTTPException(status_code=404,detail="Reward Not Found.")
+
+    user_balance_info = get_user_balance(current_user["id"],db)
+    if user_balance_info["available_balance"] < reward.point_cost:
+        raise HTTPException(status_code = 400, detail="Not Enough Points")
+    
+    if reward.is_locked:
+        required_goal = (
+                        db.query(db_models.Goal)
+                        .filter(
+                            db_models.Goal.user_id == current_user["id"],
+                            db_models.Goal.id == reward.required_goal_id
+                        )
+                        .first()
+                    )
+        if required_goal is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Required goal is missing."
+            )
+
+        if not required_goal.is_completed:
+            raise HTTPException(
+                status_code=400,
+                detail="Required goal is not completed."
+            )
+        
+    new_redemption = db_models.RewardRedemption(
+        user_id = current_user["id"],
+        reward_id = reward.id,
+        reward_name = reward.name,
+        point_cost = reward.point_cost
+    )
+
+    db.add(new_redemption)
+    db.commit()
+    db.refresh(new_redemption)
+
+    return new_redemption
 
 #Get by Reward ID
 @app.get("/rewards/{reward_id}")
 def get_reward_by_id(
     reward_id : int,
-    current_user = Depends(get_current_user)):
-    for reward in rewards:
-        if reward["user_id"] == current_user["id"]:
-            if reward["id"] == reward_id:
-                return reward
-    raise HTTPException(status_code=404,detail="Reward Not Found.")
+    current_user = Depends(get_current_user),
+    db:Session = Depends(get_db)):
+    reward = (
+        db.query(db_models.Reward)
+        .filter(db_models.Reward.user_id==current_user["id"])
+        .filter(db_models.Reward.id == reward_id)
+        .first()
+    )
+    if reward == None:
+        raise HTTPException(status_code=404,detail="Reward Not Found.")
 
-#Delete Reward
+    return reward
+
+# Archive and remove an active reward
 @app.delete("/rewards/{reward_id}")
 def delete_reward(
-    reward_id : int,
-    current_user = Depends(get_current_user)):
-    for reward in rewards:
-        if reward["user_id"] == current_user["id"] and reward["id"] == reward_id:
-            rewards.remove(reward)
-            return {
-                "message": "Success."
-            }
-    raise HTTPException(status_code=404,detail="Reward Not Found.")
-#------------------------------------------------------------------------------
+    reward_id: int,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    reward = (
+        db.query(db_models.Reward)
+        .filter(
+            db_models.Reward.user_id == current_user["id"],
+            db_models.Reward.id == reward_id
+        )
+        .first()
+    )
+
+    if reward is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Reward Not Found."
+        )
+
+    archived_reward = db_models.RewardsArchive(
+        original_reward_id=reward.id,
+        user_id=current_user["id"],
+
+        required_goal_id=reward.required_goal_id,
+        required_goal_title=(
+            reward.required_goal.title
+            if reward.required_goal is not None
+            else None
+        ),
+
+        name=reward.name,
+        description=reward.description,
+        tag=reward.tag,
+        point_cost=reward.point_cost,
+        estimated_cost=reward.estimated_cost,
+        is_locked=reward.is_locked,
+        image_url=reward.image_url
+    )
+
+    db.add(archived_reward)
+    db.delete(reward)
+    db.commit()
+    db.refresh(archived_reward)
+
+    return {
+        "message": f"Reward #{reward_id} archived and removed.",
+        "archive_id": archived_reward.id
+    }
