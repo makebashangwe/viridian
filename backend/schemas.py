@@ -154,18 +154,18 @@ class TokenResponse(BaseModel):
     token_type: str
 
 '''
-UserResponse
-TokenResponse
-ActivitySessionResponse
-XPSummaryResponse
-XPByActivityResponse
-XPByActivityIdResponse
-XPBySessionResponse
-GoalResponse
-GoalProgressResponse
-GoalRewardsSummaryResponse
-RewardResponse
-RewardBalanceResponse
-RewardRedemptionResponse
-MessageResponse
-ArchiveRewardResponse'''
+Remaining:
+    ActivitySessionResponse
+    XPSummaryResponse
+    XPByActivityResponse
+    XPByActivityIdResponse
+    XPBySessionResponse
+    GoalResponse
+    GoalProgressResponse
+    GoalRewardsSummaryResponse
+    RewardResponse
+    RewardBalanceResponse
+    RewardRedemptionResponse
+    MessageResponse
+    ArchiveRewardResponse
+'''
