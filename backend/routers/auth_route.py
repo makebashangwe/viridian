@@ -3,8 +3,11 @@ from database import get_db
 import db_models #DB Models
 
 from schemas import (
-    UserRegister, 
-    UserLogin) #request/response schemas
+    UserRegister,
+    UserLogin,
+    UserResponse,
+    TokenResponse
+)
 
 from sqlalchemy.orm import Session
 
@@ -31,7 +34,11 @@ router = APIRouter(
 #USER & AUTHENTICATION LOGIC
 
 #Register User and generate Hash
-@router.post("/register")
+@router.post(
+    "/register",
+    response_model=UserResponse,
+    status_code=201
+)
 def register_user(
     incoming_user: UserRegister,
     db: Session = Depends(get_db)): #Open DB (connection/Session to Postgres). When it's done, close it.
@@ -68,7 +75,10 @@ def register_user(
 
 
 #Authentication Logic
-@router.post("/login")
+@router.post(
+    "/login",
+    response_model=TokenResponse
+)
 def login_user(
     login_data: UserLogin,
     db: Session = Depends(get_db)):
@@ -94,7 +104,10 @@ def login_user(
             
 
 #For Swagger OAuth Testing
-@router.post("/token")
+@router.post(
+    "/token",
+    response_model=TokenResponse
+)
 def login_for_swagger(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
@@ -104,7 +117,7 @@ def login_for_swagger(
     ).first()
 
     if existing_user is None:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(status_code=401, detail="Invalid email or password",headers={"WWW-Authenticate": "Bearer"})
 
     success = verify_password(
         form_data.password,
@@ -112,7 +125,7 @@ def login_for_swagger(
     )
 
     if not success:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(status_code=401, detail="Invalid email or password",headers={"WWW-Authenticate": "Bearer"})
 
     access_token = create_access_token(
         data={"sub": existing_user.email}
@@ -124,7 +137,10 @@ def login_for_swagger(
     }
 
 #Get Current User Information 
-@router.get("/me")
+@router.get(
+    "/me",
+    response_model=UserResponse
+)
 def read_users_me(current_user = Depends(get_current_user)):
     return {
         "id": current_user["id"],

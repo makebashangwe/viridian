@@ -143,6 +143,16 @@ class ActivityRuleResponse(BaseModel):
         "from_attributes": True
     }
 
+class UserResponse(BaseModel):
+    id: int
+    email: EmailStr
+    username: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+
 '''
 UserResponse
 TokenResponse
