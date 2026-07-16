@@ -5,7 +5,11 @@ import db_models #DB Models
 from services.goal_service import update_user_goal_progress
 
 from schemas import (
-    GoalCreate) #request/response schemas
+    GoalCreate,
+    GoalResponse,
+    GoalProgressResponse,
+    GoalRewardsSummaryResponse,
+    MessageResponse) #request/response schemas
 
 from sqlalchemy.orm import Session
 
@@ -26,7 +30,9 @@ router = APIRouter(
 #GOAL LOGIC  
 
 #Create goal
-@router.post("")
+@router.post("",
+            response_model=GoalResponse,
+            status_code=201)
 def create_goal(
     incoming_goal_data: GoalCreate,
     current_user = Depends(get_current_user),
@@ -58,7 +64,8 @@ def create_goal(
 
     
 #See all goals
-@router.get("")
+@router.get("",
+            response_model=list[GoalResponse])
 def get_goals(
     current_user = Depends(get_current_user),
     db:Session= Depends(get_db)):
@@ -72,7 +79,8 @@ def get_goals(
 
 
 #Delete Goal
-@router.delete("/{goal_id}")
+@router.delete("/{goal_id}",
+                response_model=MessageResponse)
 def delete_goal(
     goal_id : int,
     current_user = Depends(get_current_user),
@@ -102,7 +110,8 @@ def delete_goal(
 
 
 #See All Updated Goal Progress
-@router.get("/progress")
+@router.get("/progress",
+            response_model=list[GoalResponse])
 def get_goals_progress(
     current_user = Depends(get_current_user),
     db:Session = Depends(get_db)):
@@ -113,7 +122,8 @@ def get_goals_progress(
 
 
 #Goal Rewards
-@router.get("/rewards-summary")
+@router.get("/rewards-summary",
+            response_model=GoalRewardsSummaryResponse)
 def get_rewards_summary(
     current_user = Depends(get_current_user),
     db: Session = Depends(get_db)):
@@ -142,7 +152,8 @@ def get_rewards_summary(
 
             
 #Goal Progress by ID
-@router.get("/{goal_id}/progress")
+@router.get("/{goal_id}/progress",
+            response_model=GoalProgressResponse)
 def get_goal_progress_by_id(
     goal_id: int,
     current_user = Depends(get_current_user),
@@ -170,7 +181,8 @@ def get_goal_progress_by_id(
 
 
 #Find Goal by ID
-@router.get("/{goal_id}")
+@router.get("/{goal_id}",
+            response_model=GoalResponse)
 def get_goals_by_id(
     goal_id: int,
     current_user = Depends(get_current_user),

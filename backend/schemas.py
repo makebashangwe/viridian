@@ -5,7 +5,7 @@ from pydantic import (
     model_validator
 )
 from typing import Literal
-
+from datetime import datetime
 
 class UserRegister(BaseModel):
     email: EmailStr
@@ -153,19 +153,121 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str
 
-'''
-Remaining:
-    ActivitySessionResponse
-    XPSummaryResponse
-    XPByActivityResponse
-    XPByActivityIdResponse
-    XPBySessionResponse
-    GoalResponse
-    GoalProgressResponse
-    GoalRewardsSummaryResponse
-    RewardResponse
-    RewardBalanceResponse
-    RewardRedemptionResponse
-    MessageResponse
-    ArchiveRewardResponse
-'''
+class ActivitySessionResponse(BaseModel):
+    id = int
+    activity_rule_id: int 
+    user_id = int
+    activity_name : str
+        
+    points_earned : float
+    legal_goal_completed  : bool
+    main_goal_completed  : bool
+    bonus_intervals : int
+    duration_minutes: int
+
+    location: str
+    notes: str | None
+
+    model_config = {
+        "from_attributes" : True
+    }
+
+class XPSummaryResponse(BaseModel):
+    user_id : int
+    total_points : float
+    total_sessions : int
+    legal_goal_completed_total : int
+    main_goal_completed_total : int
+    bonus_intervals_total : int
+
+class XPByActivityResponse(BaseModel):
+    user_id: int
+    xp_by_activity: dict[str, float]
+
+class XPByActivityIdResponse(BaseModel):
+    user_id :int 
+    activity_rule_id : int
+    total_pointts :float
+
+class XPBySessionIdResponse(BaseModel):
+    user_id : int
+    session_id : int
+    total_pointts :float
+
+
+class GoalResponse(BaseModel):
+    id : int
+    activity_rule_id :int
+    user_id: int
+    
+    title : str
+    description :str
+    target_type : str
+    
+    target_value : float
+    reward_points : float
+    progress_value : float
+    is_completed : bool
+
+    model_config = {
+        "from_attributes" : True
+    }
+    
+
+class GoalProgressResponse(BaseModel):
+    goal_id : int
+    title: str
+    progress_value: float
+    target_value:  float
+    is_completed = bool
+
+
+class MessageResponse(BaseModel):
+    message : str
+
+class GoalRewardsSummaryResponse(BaseModel):
+    user_id : int
+    completed_goals: list[GoalResponse]
+    reward_points_earned: float
+    completed_goal_count :  int
+
+class RewardResponse(BaseModel):
+    id : int
+    user_id :int
+    required_goal_id : int
+
+    name : str
+    description : str
+    tag : str
+    point_cost : float
+    estimated_cost : float
+    is_locked: bool
+    image_url :str
+
+    model_config = {
+    "from_attributes" : True
+    }
+
+class RewardBalanceResponse(BaseModel):
+    user_id :int
+    reward_points_earned : float
+    reward_points_spent: float
+    available_balance: float
+
+
+class RewardRedemptionResponse(BaseModel):
+    id : int
+    user_id :int
+    reward_id : int
+
+    reward_name : str
+    point_cost: float
+    redeemed_at: datetime
+
+    model_config = {
+    "from_attributes" : True
+    }
+
+class ArchiveRewardResponse(BaseModel):
+    message: str
+    archive_id:int

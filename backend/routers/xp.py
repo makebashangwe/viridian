@@ -1,7 +1,15 @@
 from database import get_db
 import db_models #DB Models
-#request/response schemas
+
+from schemas import (
+    XPByActivityIdResponse,
+    XPByActivityResponse,
+    XPSummaryResponse,
+    XPBySessionIdResponse
+)
+
 from sqlalchemy.orm import Session
+
 from fastapi import (
     APIRouter, 
     HTTPException, 
@@ -18,7 +26,8 @@ router = APIRouter(
 #XP / POINTS LOGIC 
 
 #XP / Point Summary
-@router.get("/summary")
+@router.get("/summary",
+            response_model=XPSummaryResponse)
 def get_xp_summary(
     current_user = Depends(get_current_user),
     db : Session = Depends(get_db)):
@@ -60,7 +69,8 @@ def get_xp_summary(
     }
 
 #XP / Points by Activity Type
-@router.get("/by-activity")
+@router.get("/by-activity",
+            response_model=XPByActivityResponse)
 def get_xp_by_activity(
     current_user = Depends(get_current_user),
     db : Session = Depends(get_db)):
@@ -72,11 +82,6 @@ def get_xp_by_activity(
     )
     .first()
 )
-    if target_activity is None:
-        raise HTTPException(
-            status_code=404,
-            detail="No Activity Rules Found."
-        )
     
     xp_by_activity = {}
     
@@ -93,6 +98,7 @@ def get_xp_by_activity(
             xp_by_activity[activity_session.activity_name] += activity_session.points_earned
         else:
             xp_by_activity[activity_session.activity_name] = activity_session.points_earned
+            
     return {
         "user_id": current_user["id"],
         "xp_by_activity": xp_by_activity
@@ -100,7 +106,8 @@ def get_xp_by_activity(
 
         
 #XP / Points by Activity Rule ID
-@router.get("/by-activity/{activity_rule_id}")
+@router.get("/by-activity/{activity_rule_id}",
+            response_model=XPByActivityIdResponse)
 def get_xp_by_activity_id(
     activity_rule_id:int,
     current_user = Depends(get_current_user),
@@ -127,7 +134,8 @@ def get_xp_by_activity_id(
     }
 
 #XP / Points by Session ID
-@router.get("/by-session/{session_id}")
+@router.get("/by-session/{session_id}",
+            response_model=XPBySessionIdResponse)
 def get_xp_by_session_id(
     session_id:int,
     current_user = Depends(get_current_user),

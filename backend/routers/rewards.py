@@ -5,7 +5,11 @@ import db_models #DB Models
 from services.reward_service import get_user_balance
 
 from schemas import (
-    RewardCreate) #request/response schemas
+    RewardCreate,
+    RewardResponse,
+    RewardBalanceResponse,
+    RewardRedemptionResponse,
+    ArchiveRewardResponse) #request/response schemas
 
 from sqlalchemy.orm import Session
 
@@ -24,7 +28,10 @@ router = APIRouter(
 )
 
 #Create Reward
-@router.post("")
+@router.post(
+    "",
+    response_model=RewardResponse,
+    status_code=201)
 def create_reward(
     incoming_reward: RewardCreate,
     current_user = Depends(get_current_user),
@@ -54,7 +61,8 @@ def create_reward(
     return new_reward
 
 #See All Rewards
-@router.get("")
+@router.get("",
+            response_model=list[RewardResponse])
 def get_all_rewards(
     current_user = Depends(get_current_user),
     db:Session = Depends(get_db)):
@@ -67,7 +75,8 @@ def get_all_rewards(
     return rewards
 
 #View Reward Balance
-@router.get("/balance")
+@router.get("/balance",
+            response_model=RewardBalanceResponse)
 def get_reward_balance(
     current_user=Depends(get_current_user),
     db:Session = Depends(get_db)):
@@ -77,7 +86,9 @@ def get_reward_balance(
     return user_balance_info
 
 #Redeem by Reward ID
-@router.post("/{reward_id}/redeem")
+@router.post("/{reward_id}/redeem",
+                response_model=RewardRedemptionResponse,
+                status_code=201)
 def redeem_reward(
     reward_id : int,
     current_user = Depends(get_current_user),
@@ -131,7 +142,8 @@ def redeem_reward(
     return new_redemption
 
 #Get by Reward ID
-@router.get("/{reward_id}")
+@router.get("/{reward_id}",
+            response_model=RewardResponse)
 def get_reward_by_id(
     reward_id : int,
     current_user = Depends(get_current_user),
@@ -148,7 +160,8 @@ def get_reward_by_id(
     return reward
 
 # Archive and remove an active reward
-@router.delete("/{reward_id}")
+@router.delete("/{reward_id}",
+                response_model=ArchiveRewardResponse)
 def delete_reward(
     reward_id: int,
     current_user=Depends(get_current_user),

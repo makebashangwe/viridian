@@ -9,7 +9,9 @@ from database import get_db
 import db_models #DB Models
 
 from schemas import (
-    ActivitySessionCreate) #request/response schemas
+    ActivitySessionCreate,
+    ActivitySessionResponse,
+    MessageResponse) #request/response schemas
 
 from sqlalchemy.orm import Session
 
@@ -23,7 +25,10 @@ router = APIRouter(
 )
 
 #create session
-@router.post("")
+@router.post(
+    "",
+    response_model=ActivitySessionResponse,
+    status_code=201)
 def create_activity_session(
     incoming_session: ActivitySessionCreate,#take in activity session data
     current_user = Depends(get_current_user),
@@ -82,7 +87,9 @@ def create_activity_session(
     return new_session
 
 #See All Sessions
-@router.get("")
+@router.get("",
+            response_model=list[ActivitySessionResponse],
+)
 def get_sessions(
     current_user = Depends(get_current_user),
     db : Session = Depends(get_db)):
@@ -93,7 +100,9 @@ def get_sessions(
    
     
 #Return by Session ID
-@router.get("/{session_id}")
+@router.get(
+    "/{session_id}",
+    response_model=ActivitySessionResponse)
 def get_session_by_id(
     session_id :int, 
     db : Session = Depends(get_db),
@@ -106,7 +115,8 @@ def get_session_by_id(
     return target_session
 
 #delete session               
-@router.delete("/{session_id}")
+@router.delete("/{session_id}",
+                response_model=MessageResponse)
 def delete_session(
     session_id :int,
     db : Session = Depends(get_db),
