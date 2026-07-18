@@ -48,7 +48,7 @@ def create_goal(
             .first()
         )
         if matching_activity_rule == None:
-            raise HTTPException(status_code=404,detail="Activity Rule not Found")
+            raise HTTPException(status_code=404,detail="Activity Rule not Found.")
     
     
     new_goal = db_models.Goal(
@@ -95,7 +95,7 @@ def delete_goal(
     )
 
     if target_goal == None:
-        raise HTTPException(status_code=404,detail="Goal Not Found")
+        raise HTTPException(status_code=404,detail="Goal Not Found.")
 
     db.delete(target_goal)
     db.commit()

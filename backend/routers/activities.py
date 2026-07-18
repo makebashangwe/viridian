@@ -105,7 +105,38 @@ def edit_activity_by_id(
         raise HTTPException(status_code=404,detail="Activity Rule Not Found.")
     
     updated_data = updated_activity_rule.model_dump(exclude_unset=True) #takes out the NONE values and converts to a dict
-    
+    final_legal_minutes = updated_data.get(
+        "legal_minutes",
+        target_activity_rule.legal_minutes
+    )
+
+    final_goal_minutes = updated_data.get(
+        "goal_minutes",
+        target_activity_rule.goal_minutes
+    )
+
+    final_max_session_minutes = updated_data.get(
+        "max_session_minutes",
+        target_activity_rule.max_session_minutes
+    )
+
+    if final_legal_minutes > final_goal_minutes:
+        raise HTTPException(
+            status_code=422,
+            detail="legal_minutes cannot exceed goal_minutes"
+        )
+
+    if final_goal_minutes > final_max_session_minutes:
+        raise HTTPException(
+            status_code=422,
+            detail="goal_minutes cannot exceed max_session_minutes"
+        )
+    if not updated_data:
+        raise HTTPException(
+            status_code=400,
+            detail="No update fields were provided."
+        )
+
     for key,value in updated_data.items():
         setattr(target_activity_rule,key,value)
     

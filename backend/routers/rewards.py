@@ -103,10 +103,6 @@ def redeem_reward(
     if reward == None:
         raise HTTPException(status_code=404,detail="Reward Not Found.")
 
-    user_balance_info = get_user_balance(current_user["id"],db)
-    if user_balance_info["available_balance"] < reward.point_cost:
-        raise HTTPException(status_code = 400, detail="Not Enough Points")
-    
     if reward.is_locked:
         required_goal = (
                         db.query(db_models.Goal)
@@ -128,6 +124,11 @@ def redeem_reward(
                 detail="Required goal is not completed."
             )
         
+    user_balance_info = get_user_balance(current_user["id"],db)
+    if user_balance_info["available_balance"] < reward.point_cost:
+        raise HTTPException(status_code = 400, detail="Not Enough Points.")
+    
+
     new_redemption = db_models.RewardRedemption(
         user_id = current_user["id"],
         reward_id = reward.id,
@@ -144,6 +145,7 @@ def redeem_reward(
 #Get by Reward ID
 @router.get("/{reward_id}",
             response_model=RewardResponse)
+            
 def get_reward_by_id(
     reward_id : int,
     current_user = Depends(get_current_user),
@@ -154,6 +156,7 @@ def get_reward_by_id(
         .filter(db_models.Reward.id == reward_id)
         .first()
     )
+
     if reward == None:
         raise HTTPException(status_code=404,detail="Reward Not Found.")
 

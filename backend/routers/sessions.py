@@ -35,16 +35,19 @@ def create_activity_session(
     db : Session = Depends(get_db)):
 
     #find the matching activity rule information
-    matching_activity_rule = db.query(db_models.ActivityRule).filter(
-        db_models.ActivityRule.user_id == current_user["id"]).filter(
-        db_models.ActivityRule.id == incoming_session.activity_rule_id
-        ).first()
+    matching_activity_rule = (
+        db.query(db_models.ActivityRule)
+        .filter(db_models.ActivityRule.user_id == current_user["id"])
+        .filter(db_models.ActivityRule.is_active.is_(True))
+        .filter(db_models.ActivityRule.id == incoming_session.activity_rule_id)
+        .first()
+    )
 
     if matching_activity_rule is None:
-        raise HTTPException(status_code=404,detail="Activity Rule Not Found")
+        raise HTTPException(status_code=404,detail="Active activity rule not found.")
     
     if incoming_session.duration_minutes > matching_activity_rule.max_session_minutes : #Prevent 48 hour sessions lol
-        raise HTTPException(status_code = 400, detail="Session exceeds max allowed minutes")
+        raise HTTPException(status_code = 400, detail="Session exceeds max allowed minutes.")
 
     #Point logic
     points_earned = 0
@@ -131,5 +134,5 @@ def delete_session(
     db.commit()
     
     return {
-        "message": f"Successfully deleted Session #{session_id}"
+        "message": f"Successfully deleted Session #{session_id}."
     }

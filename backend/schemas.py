@@ -51,20 +51,34 @@ class ActivityRuleCreate(BaseModel):
 
 
 class ActivityRuleChange(BaseModel):
-    name: str | None = None
-    difficulty_rank: int | None = None
+    name: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=100
+    )
 
-    legal_minutes: int | None = None
-    legal_points: float | None = None
+    difficulty_rank: int | None = Field(
+        default=None,
+        ge=1,
+        le=5
+    )
 
-    goal_minutes: int | None = None
-    goal_points: float | None = None
+    legal_minutes: int | None = Field(default=None, gt=0)
+    legal_points: float | None = Field(default=None, ge=0)
 
-    bonus_interval_minutes: int | None = None
-    bonus_points: float | None = None
+    goal_minutes: int | None = Field(default=None, gt=0)
+    goal_points: float | None = Field(default=None, ge=0)
 
-    max_session_minutes: int | None = None
-    default_location: str | None = None
+    bonus_interval_minutes: int | None = Field(default=None, gt=0)
+    bonus_points: float | None = Field(default=None, ge=0)
+
+    max_session_minutes: int | None = Field(default=None, gt=0)
+
+    default_location: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=100
+    )
 
 
 class ActivitySessionCreate(BaseModel):

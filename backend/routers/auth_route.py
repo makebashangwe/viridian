@@ -48,13 +48,13 @@ def register_user(
         db_models.User.email == incoming_user.email).first() #Find the first user where the email matches the incoming email.
 
     if existing_email:
-        raise HTTPException(status_code=400, detail="Email already exists")
+        raise HTTPException(status_code=409, detail="Email already exists.")
    
    #Checking if username exists -> bool
     existing_user = db.query(db_models.User).filter(
         db_models.User.username == incoming_user.username).first()
     if existing_user:
-        raise HTTPException(status_code=400, detail="User already exists")
+        raise HTTPException(status_code=409, detail="User already exists.")
     
     hashed_password = hash_password(incoming_user.password)
     
@@ -86,14 +86,14 @@ def login_user(
     existing_user = db.query(db_models.User).filter(
         db_models.User.email == login_data.email).first()
     if existing_user is None:
-        raise HTTPException(status_code=401, detail="Invalid Email or Password.")
+        raise HTTPException(status_code=401, detail="Invalid Email or Password.", headers={"WWW-Authenticate" : "Bearer"})
     
     success = verify_password(
                 login_data.password, 
                 existing_user.password_hash)
 
     if not success:
-        raise HTTPException(status_code=401, detail="Invalid Email or Password.")
+        raise HTTPException(status_code=401, detail="Invalid Email or Password.", headers={"WWW-Authenticate" : "Bearer"})
 
     access_token = create_access_token(data={"sub": existing_user.email}) #who the token belongs to
                 
@@ -117,7 +117,7 @@ def login_for_swagger(
     ).first()
 
     if existing_user is None:
-        raise HTTPException(status_code=401, detail="Invalid email or password",headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=401, detail="Invalid email or password.",headers={"WWW-Authenticate": "Bearer"})
 
     success = verify_password(
         form_data.password,
@@ -125,7 +125,7 @@ def login_for_swagger(
     )
 
     if not success:
-        raise HTTPException(status_code=401, detail="Invalid email or password",headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=401, detail="Invalid email or password.",headers={"WWW-Authenticate": "Bearer"})
 
     access_token = create_access_token(
         data={"sub": existing_user.email}
