@@ -12,32 +12,28 @@ Phase 7A — Complete core persistence [STATUS: COMPLETE]
 
 Phase 7B — Stabilize the contract [STATUS: IN  PROGRESS]
 [/]Rename models.py to schemas.py.
-[]Add request validation [IN PROGRESS]
-    [/]auth
-    []activities
-    []goals
-    []rewards
-    []sessions
-    []xp
-[]Add response schemas [IN PROGRESS]
-    [/]auth
-    []activities
-    []goals
-    []rewards
-    []sessions
-    []xp
-[]Standardize route status codes and errors.
+[/]Add request validation 
+[/]Add response schemas 
+[/]Standardize route status codes and errors.
 [/] Move secrets/configuration into environment settings.
-[]Add .env.example[IN PROGRESS]
+[/]Add .env.example
 
 Phase 7C — Protect the database
-Add pytest.
-Test authentication and ownership.
-Test scoring boundaries.
-Test XP, goal, and reward calculations.
-Add Alembic.
-Generate the initial migration.
-Remove runtime create_all().
+
+7C.1 — Automated tests
+[ ] Add pytest
+[ ] Create isolated test database setup
+[ ] Test auth
+[ ] Test activities
+[ ] Test sessions and scoring
+[ ] Test XP
+[ ] Test goals
+[ ] Test rewards and redemptions
+
+7C.2 — Database migrations
+[ ] Add Alembic
+[ ] Create initial migration
+[ ] Remove runtime create_all()
 
 Phase 8 — Backend organization and frontend connection
 Split routes into routers.

@@ -54,7 +54,7 @@ def register_user(
     existing_user = db.query(db_models.User).filter(
         db_models.User.username == incoming_user.username).first()
     if existing_user:
-        raise HTTPException(status_code=409, detail="User already exists.")
+        raise HTTPException(status_code=409, detail="Username already exists.")
     
     hashed_password = hash_password(incoming_user.password)
     
