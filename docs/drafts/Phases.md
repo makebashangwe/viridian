@@ -109,6 +109,9 @@ Add:
     create rewards
     redeem rewards
 
+Target Completion Date of Phases 1-8: End of July...
+
+
 
 =====================================================
 Phase 9 : Deployment, Observability, and real-world hardening
@@ -127,6 +130,24 @@ Phase 9 : Deployment, Observability, and real-world hardening
 [ ] Add privacy and data-export foundations
 [ ] Run a small private beta
 
+Target Completion Date for phase 9: August 
+    First half: deployment and hardening [TARGET: AUGUST 15TH ]
+        production database
+        deployed backend
+        deployed frontend
+        CORS and environment configuration
+        GitHub Actions
+        migrations in deployment
+        HTTPS
+        logs and health checks
+        backups
+        account/data privacy basics
+    Second half: actual usage [TARGET: SEPTEMBER 5]
+        use Viridian myself
+        have one trusted person test it 
+        record friction and bugs
+        fix only the issues that interfere with ordinary use
+        document setup, architecture, screenshots, and deployment
 ====================================================
  
 * Then Phase 10 could focus on product learning and refinement: accessibility testing, onboarding improvements, notification design, user-controlled reviews, and deciding which deeper features are actually justified by real behavior.
