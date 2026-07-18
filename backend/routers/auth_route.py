@@ -86,7 +86,7 @@ def login_user(
     existing_user = db.query(db_models.User).filter(
         db_models.User.email == login_data.email).first()
     if existing_user is None:
-        raise HTTPException(status_code=401, detail="Invalid Username")
+        raise HTTPException(status_code=401, detail="Invalid Email or Password.")
     
     success = verify_password(
                 login_data.password, 

@@ -75,13 +75,6 @@ def get_xp_by_activity(
     current_user = Depends(get_current_user),
     db : Session = Depends(get_db)):
 
-    target_activity = (
-    db.query(db_models.ActivityRule)
-    .filter(
-        db_models.ActivityRule.user_id == current_user["id"],
-    )
-    .first()
-)
     
     xp_by_activity = {}
     

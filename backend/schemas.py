@@ -154,9 +154,9 @@ class TokenResponse(BaseModel):
     token_type: str
 
 class ActivitySessionResponse(BaseModel):
-    id = int
+    id : int
     activity_rule_id: int 
-    user_id = int
+    user_id : int
     activity_name : str
         
     points_earned : float
@@ -187,17 +187,17 @@ class XPByActivityResponse(BaseModel):
 class XPByActivityIdResponse(BaseModel):
     user_id :int 
     activity_rule_id : int
-    total_pointts :float
+    total_points :float
 
 class XPBySessionIdResponse(BaseModel):
     user_id : int
     session_id : int
-    total_pointts :float
+    total_points :float
 
 
 class GoalResponse(BaseModel):
     id : int
-    activity_rule_id :int
+    activity_rule_id :int | None
     user_id: int
     
     title : str
@@ -219,7 +219,7 @@ class GoalProgressResponse(BaseModel):
     title: str
     progress_value: float
     target_value:  float
-    is_completed = bool
+    is_completed : bool
 
 
 class MessageResponse(BaseModel):
@@ -234,7 +234,7 @@ class GoalRewardsSummaryResponse(BaseModel):
 class RewardResponse(BaseModel):
     id : int
     user_id :int
-    required_goal_id : int
+    required_goal_id : int | None
 
     name : str
     description : str
@@ -242,7 +242,7 @@ class RewardResponse(BaseModel):
     point_cost : float
     estimated_cost : float
     is_locked: bool
-    image_url :str
+    image_url :str | None
 
     model_config = {
     "from_attributes" : True
@@ -258,7 +258,7 @@ class RewardBalanceResponse(BaseModel):
 class RewardRedemptionResponse(BaseModel):
     id : int
     user_id :int
-    reward_id : int
+    reward_id : int | None
 
     reward_name : str
     point_cost: float
