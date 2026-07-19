@@ -47,7 +47,7 @@ def create_activity_session(
         raise HTTPException(status_code=404,detail="Active activity rule not found.")
     
     if incoming_session.duration_minutes > matching_activity_rule.max_session_minutes : #Prevent 48 hour sessions lol
-        raise HTTPException(status_code = 400, detail="Session exceeds max allowed minutes.")
+        raise HTTPException(status_code = 400, detail="Session exceeds the maximum allowed duration.")
 
     #Point logic
     points_earned = 0

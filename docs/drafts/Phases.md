@@ -25,7 +25,7 @@ Phase 7C — Protect the database
 [/] Create isolated test database setup
 [/] Test auth
 [/] Test activities
-[ ] Test sessions and scoring [IN PROGRESS]
+[/] Test sessions and scoring [IN PROGRESS]
 [ ] Test XP
 [ ] Test goals
 [ ] Test rewards and redemptions
