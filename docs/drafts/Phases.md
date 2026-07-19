@@ -26,9 +26,11 @@ Phase 7C — Protect the database
 [/] Test auth
 [/] Test activities
 [/] Test sessions and scoring [IN PROGRESS]
-[ ] Test XP
-[ ] Test goals
-[ ] Test rewards and redemptions
+[/] Test XP
+[/] Test goals
+[/] Test rewards and redemptions
+
+*ALL 77 PASSED*
 
 7C.2 — Database migrations
 [ ] Add Alembic
