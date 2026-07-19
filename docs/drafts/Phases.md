@@ -30,12 +30,29 @@ Phase 7C — Protect the database
 [/] Test goals
 [/] Test rewards and redemptions
 
-*ALL 77 PASSED*
+77 passed in 33.88s
+
 
 7C.2 — Database migrations
 [ ] Add Alembic
 [ ] Create initial migration
 [ ] Remove runtime create_all()
+
+install Alembic
+    → initialize Alembic
+    → connect it to Viridian config
+    → import SQLAlchemy metadata
+    → generate initial migration
+    → inspect migration
+    → apply it to a fresh database
+    → verify tests
+    → remove Base.metadata.create_all(...)
+
+prove 
+    empty database
+        → alembic upgrade head
+        → complete Viridian schema
+        → 77 tests still pass
 
 ======================================================
 Phase 8 : Frontend foundation and API integration
