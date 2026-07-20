@@ -2,111 +2,205 @@
 
 Viridian is a calm personal life system for recording lightweight check-ins, recognizing meaningful patterns, and supporting intentional growth without turning everyday life into a constant optimization exercise.
 
-The project uses game-inspired structure—activities, sessions, goals, XP, and personal rewards—but its purpose is not to pressure users into maintaining streaks or maximizing every metric. Viridian is designed around a simpler rhythm:
+The project uses game-inspired structures—activities, sessions, goals, XP, and personal rewards—but its purpose is not to pressure users into maintaining streaks or maximizing every metric.
+
+Viridian is designed around a simpler rhythm:
 
 > Live your life. Record a small signal. Return later to understand the pattern.
 
+---
+
 ## Project Status
 
-**Current milestone:** Phase 7B — API contract and backend stabilization  
-**Recently completed:** Phase 7A — PostgreSQL persistence and router/service refactor
+**Completed:** Phase 7 — Backend stabilization, automated testing, and database migrations  
+**Current milestone:** Phase 8 — Frontend foundation and API integration
 
-The backend MVP now uses a persistent relational database for its primary domains and is organized into focused FastAPI routers rather than one large application file.
+The backend MVP is complete and currently includes:
 
-## Current Backend Architecture
+- PostgreSQL persistence
+- SQLAlchemy ORM models and relationships
+- FastAPI domain routers
+- Pydantic request and response schemas
+- JWT authentication
+- service-layer business logic
+- Alembic database migrations
+- 77 passing automated tests
+
+Runtime table creation has been removed from the FastAPI application. Database schema changes are now managed through Alembic migrations.
+
+---
+
+## Product Philosophy
+
+Viridian is not intended to become an obsessive productivity tracker or a universal score for a person's value.
+
+Its design principles are:
+
+- **Lightweight check-ins:** Recording an experience should take less attention than living it.
+- **Reflection over surveillance:** Viridian stores deliberate signals rather than constantly monitoring users.
+- **Meaningful review:** Patterns become useful when reviewed later, not when every moment is interrupted by feedback.
+- **User-defined value:** Users decide which activities, goals, and rewards matter to them.
+- **Calm motivation:** Progress systems should encourage awareness without creating guilt, pressure, or dependency.
+- **Privacy-conscious design:** Viridian should collect only the information necessary to serve its purpose.
+
+---
+
+## Current Architecture
+
+Viridian is currently implemented as a modular monolith.
 
 ```text
-Client / Swagger UI
-        |
-        v
+Client
+  |
+  v
 FastAPI application
-        |
-        +-- Authentication dependency
-        |
-        +-- Domain routers
-        |     +-- auth
-        |     +-- activities
-        |     +-- sessions
-        |     +-- xp
-        |     +-- goals
-        |     +-- rewards
-        |
-        +-- Shared service functions
-        |     +-- goal progress calculation
-        |     +-- reward balance calculation
-        |
-        +-- Pydantic request/response schemas
-        |
-        +-- SQLAlchemy ORM models
-        |
-        +-- PostgreSQL
+  |
+  +-- Authentication and authorization
+  |
+  +-- Domain routers
+  |     +-- auth
+  |     +-- activities
+  |     +-- sessions
+  |     +-- xp
+  |     +-- goals
+  |     +-- rewards
+  |
+  +-- Shared services
+  |     +-- goal progress calculation
+  |     +-- reward balance calculation
+  |
+  +-- Pydantic schemas
+  |
+  +-- SQLAlchemy ORM models
+  |
+  +-- PostgreSQL
 ```
 
-### Backend Responsibilities
+This structure keeps the system understandable and maintainable while the product model is still evolving. Distributed services or more complex infrastructure will only be introduced when there is a demonstrated operational need.
 
-- **`main.py`** creates the FastAPI application, initializes the current database tables, and registers domain routers.
-- **`routers/`** contains HTTP-facing endpoint logic grouped by feature.
-- **`services.py`** contains shared business operations used by more than one router.
-- **`schemas.py`** defines Pydantic request and response contracts.
-- **`db_models.py`** defines SQLAlchemy ORM entities and relationships.
-- **`database.py`** configures the SQLAlchemy engine, session factory, and request-scoped database dependency.
-- **`auth.py`** handles password hashing, JWT creation, and current-user resolution.
+---
 
-The application is currently a modular monolith. This keeps the system understandable and maintainable while the product model is still evolving. Separate services or distributed infrastructure will only be introduced when the product has a real operational need for them.
+## Repository Structure
+
+```text
+viridian/
+├── alembic.ini
+├── requirements.txt
+├── .env.example
+├── README.md
+│
+├── backend/
+│   ├── main.py
+│   ├── auth.py
+│   ├── config.py
+│   ├── database.py
+│   ├── db_models.py
+│   ├── schemas.py
+│   │
+│   ├── routers/
+│   │   ├── __init__.py
+│   │   ├── auth_route.py
+│   │   ├── activities.py
+│   │   ├── sessions.py
+│   │   ├── xp.py
+│   │   ├── goals.py
+│   │   └── rewards.py
+│   │
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── goal_service.py
+│   │   └── reward_service.py
+│   │
+│   ├── tests/
+│   │   ├── __init__.py
+│   │   ├── conftest.py
+│   │   ├── test_auth.py
+│   │   ├── test_activities.py
+│   │   ├── test_sessions.py
+│   │   ├── test_xp.py
+│   │   ├── test_goals.py
+│   │   └── test_rewards.py
+│   │
+│   └── alembic/
+│       ├── env.py
+│       ├── script.py.mako
+│       └── versions/
+│           └── 1773ad942e12_initial_schema.py
+│
+└── docs/
+    ├── dev-journal/
+    └── drafts/
+```
+
+---
 
 ## Implemented Features
 
 ### Authentication and User Access
 
 - User registration
-- Duplicate email and username protection
-- Password hashing
-- Email/password login
+- Duplicate email protection
+- Duplicate username protection
+- Secure password hashing
+- Email and password login
 - JWT bearer authentication
-- OAuth2-compatible token route for Swagger authorization
-- Protected current-user access
+- OAuth2-compatible token route
+- Protected current-user endpoint
 - User-owned resource filtering
+- Cross-user access protection
 
 ### Activity Rules
 
-Users can define how a meaningful activity should be evaluated.
+Users define how an activity should be evaluated.
 
-Implemented behavior includes:
+Supported operations include:
 
 - Create an activity rule
 - List active activity rules
 - Retrieve an activity rule by ID
 - Partially update an activity rule
 - Archive an activity rule
-- Configure:
-  - legal minimum duration
-  - primary goal duration
-  - maximum session duration
-  - base points
-  - goal points
-  - bonus intervals
-  - bonus points
+- Restore an archived activity rule
+- Prevent archived activities from receiving new sessions
 
-Activity rules are intentionally user-defined. Viridian does not decide that one kind of life activity is inherently more valuable than another.
+Activity rules can configure:
+
+- difficulty rank
+- legal minimum duration
+- legal completion points
+- primary goal duration
+- primary goal points
+- bonus interval duration
+- bonus points
+- maximum session duration
+- default location
+
+Viridian does not decide that one type of activity is inherently more valuable than another.
 
 ### Activity Sessions
 
 - Record an activity session
-- Validate that the referenced activity belongs to the authenticated user
-- Prevent sessions that exceed the configured maximum duration
-- Calculate:
-  - legal-goal completion
-  - main-goal completion
-  - bonus intervals
-  - total XP earned
-- Store an activity-name snapshot with the session
-- List a user’s sessions
+- Validate activity ownership
+- Reject sessions for missing or archived activities
+- Reject sessions exceeding the configured maximum duration
+- Store activity-name snapshots
+- Store scoring-result snapshots
+- List sessions
 - Retrieve a session by ID
-- Remove or archive sessions according to the current route behavior
+- Delete an incorrect session
+
+Session scoring includes:
+
+- legal-goal completion
+- main-goal completion
+- bonus intervals
+- total XP earned
+
+Historical sessions preserve their original scoring results even when an activity rule is edited later.
 
 ### XP and Progress Summaries
 
-- Total XP summary
+- Total XP
 - Total session count
 - Legal-goal completion count
 - Main-goal completion count
@@ -115,90 +209,155 @@ Activity rules are intentionally user-defined. Viridian does not decide that one
 - XP for a specific activity rule
 - XP for a specific session
 
-XP is used as a reflective summary of completed actions. It is not intended to become a universal score for the user’s worth, discipline, health, or productivity.
+XP is a reflective summary of completed actions. It is not intended to measure a user's worth, discipline, health, or productivity.
 
 ### Goals
 
-- Create goals
+- Create global goals
+- Create activity-specific goals
 - List goals
 - Retrieve a goal by ID
+- Delete goals
 - Calculate progress for all goals
 - Calculate progress for an individual goal
-- Mark goals complete when their target is reached
+- Mark goals complete when targets are reached
 - Award reward points for completed goals
-- Delete or archive goals according to the current route behavior
-- Support goal targets based on metrics such as:
-  - total XP
-  - total sessions
-  - completed main goals
-  - activity-specific progress
+- Prevent another user's activity from being assigned to a goal
 
-Goal progress is derived from recorded sessions rather than requiring the user to manually maintain multiple copies of the same information.
+Supported goal targets include:
+
+- total XP
+- total sessions
+- completed legal goals
+- completed main goals
+- bonus intervals
+
+Goal progress is derived from recorded sessions rather than requiring users to maintain duplicate information manually.
 
 ### Rewards
 
 - Create personal rewards
+- Create rewards tied to required goals
 - List rewards
-- Retrieve rewards by ID
-- View earned, spent, and available reward-point balances
-- Redeem a reward
-- Record reward-redemption history
-- Lock a reward behind a required goal
-- Validate that locked rewards reference a real user-owned goal
-- Prevent redemption when:
-  - the user lacks enough points
-  - the required goal is incomplete
-- Archive rewards while preserving historical information
+- Retrieve a reward by ID
+- View earned reward points
+- View spent reward points
+- View available reward balance
+- Redeem rewards
+- Prevent redemption when balance is insufficient
+- Lock rewards behind goal completion
+- Archive rewards
+- Preserve redemption history after reward removal
 
-Rewards are chosen by the user. Viridian provides structure for intentional celebration rather than prescribing what a “good” reward should be.
+Reward redemptions store immutable snapshots of:
 
-## Persistence Model
+- reward name
+- point cost
+- redemption timestamp
 
-The active backend uses PostgreSQL through SQLAlchemy.
+Rewards are chosen by the user. Viridian provides a structure for intentional celebration rather than prescribing what a good reward should be.
 
-Current persisted domains include:
+---
 
-- users
-- activity rules
-- activity sessions
-- goals
-- rewards
-- reward redemptions
-- archived reward records
+## Database and Migration Management
 
-The application now uses database-backed information for XP summaries, goal progress, reward balances, and redemption checks. This removes the earlier split between PostgreSQL records and process-local Python lists.
+Viridian uses:
 
-## API Organization
+- PostgreSQL
+- SQLAlchemy 2
+- Alembic
 
-The backend is separated into domain routers:
+The application does not create tables automatically at startup.
 
-```text
-backend/
-├── main.py
-├── auth.py
-├── database.py
-├── db_models.py
-├── schemas.py
-├── services.py
-├── requirements.txt
-└── routers/
-    ├── __init__.py
-    ├── auth.py
-    ├── activities.py
-    ├── sessions.py
-    ├── xp.py
-    ├── goals.py
-    └── rewards.py
+Schema creation and changes are managed through migrations:
+
+```bash
+py -m alembic upgrade head
 ```
 
-Shared calculations that affect multiple domains are being moved into the service layer. Examples include updating goal progress and calculating a user’s available reward balance.
+The initial migration creates:
 
-This refactor reduces duplication and keeps route handlers focused on:
+```text
+users
+activity_rules
+sessions
+goals
+rewards
+reward_redemptions
+rewards_archive
+```
 
-1. accepting and validating HTTP input,
-2. resolving the authenticated user,
-3. calling business or persistence logic,
-4. returning a stable API response.
+To inspect the current database revision:
+
+```bash
+py -m alembic current
+```
+
+To view migration history:
+
+```bash
+py -m alembic history
+```
+
+To verify that ORM models and the database schema remain synchronized:
+
+```bash
+py -m alembic check
+```
+
+Expected result:
+
+```text
+No new upgrade operations detected.
+```
+
+---
+
+## Automated Testing
+
+Viridian currently has **77 passing backend tests**.
+
+Tested areas include:
+
+- registration and login
+- JWT authentication
+- OAuth2 token behavior
+- request validation
+- activity CRUD behavior
+- activity archive and restore behavior
+- session creation and scoring
+- scoring thresholds and bonus intervals
+- XP aggregation
+- goal creation and progress
+- activity-specific goal filtering
+- reward creation and balance calculation
+- locked reward behavior
+- reward redemption
+- reward archiving
+- missing-resource responses
+- cross-user ownership protection
+
+Run the complete test suite:
+
+```bash
+py -m pytest ./backend/tests -v
+```
+
+Run the concise version:
+
+```bash
+py -m pytest ./backend/tests -q
+```
+
+Expected result:
+
+```text
+77 passed
+```
+
+The test suite uses a separate PostgreSQL database configured through `TEST_DATABASE_URL`.
+
+---
 
 ## Local Development Setup
 
@@ -207,7 +366,7 @@ This refactor reduces duplication and keeps route handlers focused on:
 Install:
 
 - Python 3.12 or newer
-- Docker Desktop or another Docker-compatible runtime
+- PostgreSQL or Docker Desktop
 - Git
 
 ### 1. Clone the repository
@@ -217,302 +376,265 @@ git clone https://github.com/makebashangwe/viridian.git
 cd viridian
 ```
 
-### 2. Create and activate a virtual environment
-
-From the repository root:
-
-```bash
-python -m venv .venv
-```
+### 2. Create a virtual environment
 
 Windows PowerShell:
 
 ```powershell
-.venv\Scripts\Activate.ps1
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
 macOS or Linux:
 
 ```bash
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Install backend dependencies
+### 3. Install dependencies
 
 ```bash
-pip install -r backend/requirements.txt
+py -m pip install -r requirements.txt
 ```
 
-### 4. Start PostgreSQL
+### 4. Configure environment variables
 
-```bash
-docker compose up -d
-```
-
-The current Compose configuration starts the local PostgreSQL service and preserves its data in a named Docker volume.
-
-### 5. Configure environment variables
-
-Create a `.env` file for local development.
-
-Example:
+Copy `.env.example` into a new `.env` file.
 
 ```env
-DATABASE_URL=postgresql://viridian:viridian@localhost:5432/viridian
-SECRET_KEY=replace-with-a-local-development-secret
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+DATABASE_URL=postgresql://viridian_user:replace_me@localhost:5432/viridian
+TEST_DATABASE_URL=postgresql://viridian_user:replace_me@localhost:5432/viridian_test
+
+JWT_SECRET_KEY=replace_with_a_long_random_secret
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
 ```
 
-Use values that match the current `docker-compose.yml`.
+Do not commit the real `.env` file.
 
-Do not commit `.env` or reuse local-development credentials in a deployed environment.
+### 5. Create the databases
 
-### 6. Run the API
+Create two PostgreSQL databases:
+
+```text
+viridian
+viridian_test
+```
+
+The first is used for local development. The second is reserved for automated testing.
+
+### 6. Apply database migrations
+
+```bash
+py -m alembic upgrade head
+```
+
+### 7. Start the API
 
 From the repository root:
 
 ```bash
-uvicorn backend.main:app --reload
+py -m uvicorn backend.main:app --reload
 ```
 
-Depending on the active import configuration, the backend can also be launched from inside the `backend` directory:
+Depending on your local import configuration, you may instead run from the backend directory:
 
 ```bash
-uvicorn main:app --reload
+cd backend
+py -m uvicorn main:app --reload
 ```
 
-The repository is being standardized around the root-level command so module imports behave consistently.
+### 8. Open the API documentation
 
-### 7. Open the API documentation
+Swagger UI:
 
-- Swagger UI: `http://127.0.0.1:8000/docs`
-- ReDoc: `http://127.0.0.1:8000/redoc`
-- Health route: `http://127.0.0.1:8000/`
-
-### 8. Stop the local database
-
-```bash
-docker compose down
+```text
+http://127.0.0.1:8000/docs
 ```
 
-To also remove the local database volume:
+OpenAPI schema:
 
-```bash
-docker compose down -v
+```text
+http://127.0.0.1:8000/openapi.json
 ```
 
-The second command permanently removes locally stored Viridian development data.
+---
 
-## Manual API Test Coverage
+## Environment Variables
 
-The current backend has been exercised through FastAPI’s Swagger UI.
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | Development PostgreSQL connection |
+| `TEST_DATABASE_URL` | Automated test PostgreSQL connection |
+| `JWT_SECRET_KEY` | Secret used to sign authentication tokens |
+| `JWT_ALGORITHM` | JWT signing algorithm |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Access-token lifetime |
 
-### Authentication
+Production credentials should be supplied through a managed secret store rather than committed files.
 
-- Register a new user
-- Reject duplicate email addresses
-- Reject duplicate usernames
-- Log in with valid credentials
-- Reject invalid credentials
-- Generate an OAuth2 bearer token through `/auth/token`
-- Authorize protected routes through Swagger
-- Retrieve the authenticated user
+---
 
-### Activity Rules
+## API Domains
 
-- Create an activity rule
-- List user-owned active rules
-- Retrieve a rule by ID
-- Update selected fields
-- Archive a rule
-- Reject access to missing or non-owned rules
+The current backend exposes routes under:
 
-### Sessions and Scoring
+```text
+/auth
+/activities
+/sessions
+/xp
+/goals
+/rewards
+```
 
-- Create sessions below, at, and above configured thresholds
-- Calculate legal-goal points
-- Calculate main-goal points
-- Calculate bonus intervals
-- Reject sessions above the configured maximum
-- List sessions
-- Retrieve individual sessions
-- Verify session ownership boundaries
+Interactive endpoint details are available through Swagger UI while the application is running.
 
-### XP
+---
 
-- Calculate total XP and session counts
-- Count legal and main goal completions
-- Count bonus intervals
-- Group XP by activity
-- Retrieve XP for one activity
-- Retrieve XP for one session
+## Current Limitations
 
-### Goals
+The current release is backend-focused.
 
-- Create supported goal types
-- Retrieve all goals and individual goals
-- Calculate live progress from stored sessions
-- Mark completed goals
-- Return incomplete goals without falsely completing them
-- Return `404` for missing goals
-- Verify activity-specific progress
+Not yet implemented:
 
-### Rewards
+- production frontend
+- mobile application
+- production deployment
+- CI/CD pipeline
+- account deletion
+- user data export
+- production monitoring
+- production backup and recovery workflow
+- advanced accessibility testing
+- AI-assisted reflection
+- Vivarium Lens integration
 
-- Create unlocked rewards
-- Create goal-locked rewards
-- Reject locked rewards without a required goal
-- Reject references to missing or non-owned goals
-- Calculate earned, spent, and available reward points
-- Reject unaffordable redemptions
-- Reject redemptions for incomplete locked goals
-- Record successful redemptions
-- Archive rewards while preserving a historical snapshot
+Known technical-debt items include:
 
-Manual testing confirms the intended MVP behavior, but it does not replace an automated regression suite.
+- replacing timezone-naive `datetime.utcnow()` defaults
+- resolving the current TestClient dependency deprecation warning
+- reviewing redundant indexes on primary-key columns
+- adding transaction rollback handling for unexpected database failures
+- defining deletion policy for goals referenced by rewards
 
-## Phase 7 Milestones
+---
 
-### Phase 7A — Persistent Domain Model and Structural Refactor
+## Roadmap
 
-**Status: Complete**
+### Phase 8 — Frontend Foundation and API Integration
 
-Completed work:
+Planned work:
 
-- Replaced the original in-memory persistence path with PostgreSQL-backed domain records
-- Added SQLAlchemy models for the core MVP domains
-- Added user ownership fields and database relationships
-- Migrated XP calculations to database sessions
-- Migrated goal progress to database queries
-- Migrated reward balances and redemptions to persisted records
-- Added archive behavior for selected records
-- Renamed and expanded Pydantic schema definitions
-- Split the original large `main.py` into domain-specific routers
-- Registered routers through the FastAPI application entry point
-- Extracted shared goal and reward calculations into service functions
-- Re-tested core API flows through Swagger
+- Configure environment-based CORS
+- Create the frontend application shell
+- Establish a centralized API client
+- Connect registration, login, logout, and current-user access
+- Build the lightweight check-in workflow
+- Add recent-session review
+- Add calm progress summaries
+- Add activity, goal, and reward management
+- Establish responsive and accessible UI foundations
+- Keep advanced analytics secondary
 
-### Phase 7B — API Contracts and Backend Stabilization
+The first frontend experience should support:
 
-**Status: In progress**
+```text
+log in
+→ choose an activity
+→ record a lightweight check-in
+→ receive a calm confirmation
+→ return to life
+```
 
-Current work:
+### Phase 9 — Deployment and Real-World Hardening
 
-- Complete response models for every endpoint
-- Apply explicit response models to remaining routes
-- Normalize status codes and response shapes
-- Improve validation for:
-  - positive durations and point values
-  - ordered activity thresholds
-  - nonzero bonus intervals
-  - supported goal target types
-  - valid reward costs
-- Standardize package imports so the API launches reliably from the repository root
-- Remove unused imports and legacy references
-- Verify router prefixes, path parameters, and route ordering
-- Keep route handlers thin by moving reusable calculations into services
-- Review archive and deletion semantics for historical safety
-- Add an `.env.example`
-- Move JWT configuration fully into environment-backed settings
-- Document all local commands and API behavior
+Planned work:
 
-The goal of Phase 7B is not to add more product surface area. It is to make the completed backend behavior predictable, readable, and safe to build on.
+- Containerize application components
+- Configure production environments
+- Deploy PostgreSQL
+- Deploy the FastAPI backend
+- Deploy the frontend
+- Configure HTTPS and domains
+- Add CI/CD
+- Add structured logging
+- Add health checks
+- Add error monitoring
+- Establish backup and restore procedures
+- Add privacy and data-management foundations
+- Run a small private beta
 
-### Phase 7C — Migrations, Automated Tests, and Deployment Readiness
+### Future Direction
 
-**Status: Remaining**
+Potential later work includes:
 
-Planned tasks:
+- user-controlled weekly and monthly reviews
+- reflection capture
+- accessibility refinement
+- carefully scoped AI-assisted pattern interpretation
+- mobile packaging
+- integration with Vivarium Lens and Brilliant Halo glasses
 
-- Add Alembic
-- Create a baseline database migration
-- Replace normal startup-time `Base.metadata.create_all()` usage
-- Add automated tests with `pytest`
-- Configure FastAPI dependency overrides for test databases
-- Test authentication and user isolation
-- Test activity scoring boundaries
-- Test goal completion behavior
-- Test reward accounting and redemption rules
-- Add regression tests for archive behavior
-- Add database constraint tests
-- Add a backend Dockerfile
-- Expand Docker Compose to run both the API and PostgreSQL
-- Add service health checks and dependency ordering
-- Add structured configuration management
-- Remove tracked generated files such as `__pycache__`
-- Add linting and formatting configuration
-- Add a basic GitHub Actions workflow
-- Run tests automatically on pushes and pull requests
-- Confirm database persistence across container restarts
-- Perform a final Phase 7 end-to-end verification
+AI features should summarize and support deliberate reflection rather than constantly judge, interrupt, or optimize the user.
 
-Phase 7 is complete when a new developer can clone the repository, configure the environment, run migrations, start the stack, execute the automated tests, and reproduce the documented behavior without relying on hidden local state.
+---
 
-## Design Principles
+## Companion Project: Vivarium Lens
 
-Viridian’s technical decisions are evaluated against five long-term concerns.
+Vivarium Lens is a planned wearable client for Viridian using Brilliant Halo glasses.
 
-### Calm usability
+The Lens will act as another interface to the same Viridian backend rather than duplicating its business logic.
 
-The system should require only enough input to preserve meaning. It should not punish missed days, manufacture urgency, or make users feel watched by their own data.
+```text
+Viridian web client
+Viridian mobile client
+Vivarium Lens
+        |
+        v
+Viridian API
+        |
+        v
+PostgreSQL
+```
 
-### Privacy
+Initial Lens goals include:
 
-Personal check-ins can reveal routines, health patterns, relationships, locations, and emotional context. Data collection should remain intentional, transparent, minimal, and user-controlled.
+- quick activity check-ins
+- glanceable progress retrieval
+- short reflection capture
+- intentional voice or button-driven commands
+- privacy-conscious wearable interactions
 
-### Accessibility
+The wearable experience will preserve the same philosophy:
 
-The future interface should support keyboard navigation, screen readers, reduced motion, readable contrast, flexible text sizing, and low-cognitive-load interactions.
+> Record what matters quickly, then return attention to real life.
 
-### Automation with consent
+---
 
-Viridian may eventually import signals or generate summaries, but automation should reduce effort without silently deciding what matters to the user.
+## Engineering Priorities
 
-### Maintainability
+Technical decisions are evaluated against:
 
-The project favors clear domain boundaries, ordinary technologies, explicit data models, and incremental evolution over premature complexity.
+1. usability
+2. privacy
+3. accessibility
+4. automation
+5. maintainability
+6. operational reliability
 
-## Technology Stack
+Viridian intentionally avoids unnecessary architectural complexity. New infrastructure should solve demonstrated problems rather than exist only to make the system appear more sophisticated.
 
-### Current
-
-- Python
-- FastAPI
-- Pydantic
-- SQLAlchemy
-- PostgreSQL
-- JWT bearer authentication
-- Passlib/password hashing
-- Docker Compose
-- Swagger/OpenAPI
-
-### Planned
-
-- Alembic
-- Pytest
-- Backend containerization
-- GitHub Actions
-- Responsive web frontend
-- Privacy-aware review and insight features
-
-## Product Direction
-
-The backend currently models activities, sessions, XP, goals, and rewards because they provide a useful foundation for testing user-owned data, derived progress, and personal feedback loops.
-
-The longer-term product will emphasize:
-
-- quick check-ins
-- optional context
-- weekly and monthly reflection
-- user-controlled patterns and summaries
-- accessible visual progress
-- gentle celebration
-- clear privacy controls
-- fewer notifications, not more
-
-Viridian should help users notice their lives—not disappear into managing them.
+---
 
 ## License
 
 A license has not yet been selected.
+
+Until a license is added, the source code remains publicly viewable but is not automatically granted an open-source usage license.
+
+---
+
+## Author
+
+Created by **Makeba Shangwe** as a full-stack software engineering project exploring calm technology, backend architecture, wearable interfaces, and privacy-conscious personal software.
