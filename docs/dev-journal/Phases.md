@@ -63,16 +63,16 @@
 ## Phase 8A — Frontend shell [STATUS: IN PROGRESS]
     Goal: Create a responsive React application that can run beside the FastAPI backend.
 
-    [ ] Verify Node.js and npm
-    [ ] Create React + TypeScript frontend with Vite
-    [ ] Remove starter demo content
-    [ ] Establish frontend folders
-    [ ] Add global design tokens
-    [ ] Create basic application shell
-    [ ] Add placeholder routes
-    [ ] Confirm production build succeeds
+    [/] Verify Node.js and npm
+    [/] Create React + TypeScript frontend with Vite
+    [/] Remove starter demo content
+    [/] Establish frontend folders
+    [/] Add global design tokens
+    [/] Create basic application shell
+    [/] Add placeholder routes
+    [/] Confirm production build succeeds
 
-We are using React + TypeScript + Vite. React officially supports starting a React app with a build tool such as Vite, and Vite provides a react-ts template. Current Vite requires Node.js 20.19+ or 22.12+.
+We are using React + TypeScript + Vite. React officially supports starting a React app with a build tool such as Vite, and Vite provides a react-ts template.
 
 Phase 8B — API and authentication
     [ ] Add environment-based API URL
