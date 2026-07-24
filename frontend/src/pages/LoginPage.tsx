@@ -29,17 +29,12 @@ function LoginPage() {
     setIsLoading(false)
   }
 }
-  {error && (
-  <p role="alert">
-    {error}
-  </p>
-)}
-
+  
   return (
     <section>
       <h1>Log In</h1>
       <p>Access your check-ins and continue where you left off.</p>
-
+        {error && <p role="alert">{error}</p>}
       <form onSubmit={handleSubmit}>
         <label htmlFor="email">Email</label>
         <input
