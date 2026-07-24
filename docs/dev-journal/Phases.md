@@ -75,8 +75,8 @@
 We are using React + TypeScript + Vite. React officially supports starting a React app with a build tool such as Vite, and Vite provides a react-ts template.
 
 Phase 8B — API and authentication
-    [ ] Add environment-based API URL
-    [ ] Configure FastAPI CORS
+    [/] Add environment-based API URL
+    [/] Configure FastAPI CORS
     [ ] Create centralized API client
     [ ] Add login
     [ ] Add registration

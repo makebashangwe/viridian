@@ -6,6 +6,7 @@ import NotFoundPage from './pages/NotFoundPage'
 import RegisterPage from './pages/RegisterPage'
 import CheckInPage from './pages/CheckInPage'
 
+
 function App() {
   return (
     <AppShell>
