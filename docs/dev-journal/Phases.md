@@ -77,13 +77,13 @@ We are using React + TypeScript + Vite. React officially supports starting a Rea
 Phase 8B — API and authentication
     [/] Add environment-based API URL
     [/] Configure FastAPI CORS
-    [ ] Create centralized API client
-    [ ] Add login
-    [ ] Add registration
-    [ ] Add current-user loading
-    [ ] Add logout
-    [ ] Add protected routes
-    [ ] Handle expired and invalid sessions
+    [/] Create centralized API client
+    [/] Add login
+    [/] Add registration
+    [/] Add current-user loading
+    [/] Add logout
+    [/] Add protected routes
+    [/] Handle expired and invalid sessions
 
 Phase 8C — Lightweight check-in
     [ ] Load active activities
