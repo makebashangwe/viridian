@@ -1,37 +1,43 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
-import { getCurrentUser, login } from '../services/auth'
+import { useLocation, useNavigate } from 'react-router'
+import { useAuth } from '../hooks/useAuth'
 
 function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const { signIn } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  const destination =
+    (
+      location.state as {
+        from?: {
+          pathname?: string
+        }
+      } | null
+    )?.from?.pathname ?? '/check-in'
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     setError('')
-    setIsLoading(true)
+    setIsSubmitting(true)
 
     try {
-      const token = await login({
+      await signIn({
         email,
         password,
       })
 
-      sessionStorage.setItem('access_token', token.access_token)
-
-      await getCurrentUser()
-
-      navigate('/check-in')
+      navigate(destination, { replace: true })
     } catch {
-      sessionStorage.removeItem('access_token')
       setError('We could not log you in. Check your email and password.')
     } finally {
-      setIsLoading(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -65,8 +71,8 @@ function LoginPage() {
           required
         />
 
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? 'Logging in…' : 'Log in'}
+        <button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Logging in…' : 'Log in'}
         </button>
       </form>
 
