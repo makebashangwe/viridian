@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../hooks/useAuth'
 
 function LoginPage() {
@@ -76,7 +76,9 @@ function LoginPage() {
         </button>
       </form>
 
-      <p>New to Viridian? Create an account.</p>
+      <p> 
+        New to Viridian? <Link to="/register">Create an account</Link>
+      </p>
     </section>
   )
 }
