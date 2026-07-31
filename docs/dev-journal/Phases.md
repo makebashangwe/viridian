@@ -103,6 +103,12 @@ Phase 8C — Lightweight check-in
     → “Saved.”
     → return to life
 
+8C.1 — load and display activities
+8C.2 — controlled form fields
+8C.3 — submit to backend
+8C.4 — validation and error states
+8C.5 — confirmation and reset behavior
+
 Phase 8D — Calm review
     [ ] Show recent sessions
     [ ] Show simple XP summary
